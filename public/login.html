@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Telegraaf Horen CRM - Inloggen</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      background: linear-gradient(135deg, #12243E 0%, #1a3550 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-card {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .logo-placeholder {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 1rem;
+      background: #3AA6B9;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: white;
+      font-weight: bold;
+    }
+
+    h1 {
+      color: #12243E;
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: #D1B18A;
+      font-size: 0.95rem;
+      font-weight: normal;
+    }
+
+    .form-group {
+      margin-bottom: 1.3rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #12243E;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #3AA6B9;
+      box-shadow: 0 0 0 3px rgba(58, 166, 185, 0.1);
+    }
+
+    input::placeholder {
+      color: #999;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.95rem;
+      background: #3AA6B9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit:hover {
+      background: #2d8a9a;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+
+    .btn-submit:disabled {
+      background: #999;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .alert-error {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 0.875rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-size: 0.95rem;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .alert-error.show {
+      display: block;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .footer-text {
+      margin-top: 1.5rem;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .footer-text a {
+      color: #3AA6B9;
+      text-decoration: none;
+    }
+
+    .footer-text a:hover {
+      text-decoration: underline;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-placeholder">👂</div>
+        <h1>Telegraaf Horen</h1>
+        <p class="subtitle">CRM Systeem - Beveiligde toegang</p>
+      </div>
+
+      <div id="alert-error" class="alert-error"></div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="username">Gebruikersnaam</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            autocomplete="username"
+            required
+            maxlength="50"
+            placeholder="Voer uw gebruikersnaam in"
+            disabled
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Wachtwoord</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            autocomplete="current-password"
+            required
+            maxlength="128"
+            placeholder="Voer uw wachtwoord in"
+            disabled
+          >
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">
+          Inloggen
+        </button>
+      </form>
+
+      <div class="footer-text">
+        <p>Telegraaf Horen © 2026</p>
+        <p>Beveiligd systeem - HTTPS versleuteld</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enable form inputs once page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('username').disabled = false;
+      document.getElementById('password').disabled = false;
+      document.getElementById('username').focus();
+    });
+
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const submitBtn = document.getElementById('submit-btn');
+      const alertDiv = document.getElementById('alert-error');
+
+      // Clear previous error
+      alertDiv.classList.remove('show');
+      alertDiv.textContent = '';
+
+      // Validation
+      if (!username || !password) {
+        alertDiv.textContent = 'Gebruikersnaam en wachtwoord zijn verplicht';
+        alertDiv.classList.add('show');
+        return;
+      }
+
+      // Disable button & show loading state
+      submitBtn.disabled = true;
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<span class="loading-spinner"></span>Bezig...';
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            gebruikersnaam: username,
+            wachtwoord: password
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to dashboard
+          window.location.href = '/';
+        } else {
+          // Show error message
+          alertDiv.textContent = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
+          alertDiv.classList.add('show');
+
+          // Clear password field
+          document.getElementById('password').value = '';
+          document.getElementById('password').focus();
+        }
+      } catch (err) {
+        alertDiv.textContent = 'Verbindingsfout. Controleer uw internetverbinding.';
+        alertDiv.classList.add('show');
+        console.error('Login error:', err);
+      } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('login-form').dispatchEvent(new Event('submit'));
+      }
+    });
+  </script>
+</body>
+</html>

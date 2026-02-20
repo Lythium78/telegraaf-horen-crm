@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment & Secrets (KRITIEK: NOOIT committen!)
+.env
+.env.local
+.env.*.local
+SESSION_SECRET
+
+# Database files
+crm.db
+crm.db-*
+*.sqlite
+*.sqlite3
+sessies.db
+sessies.db-*
+
+# Logs (kunnen gevoelige info bevatten)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup directories
+backups/
+backup_*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.cache/
+temp/
+tmp/

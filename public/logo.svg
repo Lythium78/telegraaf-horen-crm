@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280">
+  <!-- Background circle with teal color (different from dark blue) -->
+  <circle cx="100" cy="140" r="110" fill="#3AA6B9" opacity="0.15"/>
+
+  <!-- Outer ear outline - beige/gold -->
+  <ellipse cx="100" cy="120" rx="45" ry="65" fill="none" stroke="#D1B18A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Inner ear curve - dark blue -->
+  <path d="M 75 85 Q 65 115 75 155 Q 85 180 100 190" fill="none" stroke="#12243E" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Ear canal - beige -->
+  <ellipse cx="85" cy="120" rx="18" ry="28" fill="#D1B18A" opacity="0.8"/>
+
+  <!-- Inner ear details - dark blue curved lines -->
+  <path d="M 78 100 Q 72 110 75 130" fill="none" stroke="#12243E" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Highlight/shine effect - light -->
+  <ellipse cx="110" cy="100" rx="15" ry="20" fill="#ffffff" opacity="0.25"/>
+
+  <!-- Tragus (small inner part) - beige -->
+  <path d="M 88 145 Q 85 155 90 165" fill="none" stroke="#D1B18A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

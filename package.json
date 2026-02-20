@@ -1,0 +1,35 @@
+{
+  "name": "telegraaf-horen-crm",
+  "version": "1.0.0",
+  "description": "Customer Relationship Management system for Telegraaf Horen",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "create:admin": "node create-admin.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "crm",
+    "telegraaf",
+    "horen",
+    "customer",
+    "management"
+  ],
+  "author": "Telegraaf Horen",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sql.js": "^1.8.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3",
+    "express-session": "^1.17.3",
+    "connect-sqlite3": "^0.9.13",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "validator": "^13.11.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  }
+}

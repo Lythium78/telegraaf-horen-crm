@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegraaf Horen - CRM</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="logo.svg" alt="Telegraaf Horen CRM" class="logo-image">
+                    <div class="logo-text">
+                        <h1>Telegraaf Horen</h1>
+                        <p class="tagline">CRM Systeem</p>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <span id="connection-status" class="status-indicator">●</span>
+                    <span id="status-text">Verbinding controleren...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                <li><a href="#contacts" class="nav-link">Contacten</a></li>
+                <li><a href="#companies" class="nav-link">Bedrijven</a></li>
+                <li><a href="#settings" class="nav-link">Instellingen</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">Totale Contacten</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">Actieve Contacten</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">-</div>
+                        <div class="stat-label">Bedrijven</div>
+                    </div>
+                </div>
+                <div id="dashboard-message" class="info-box">
+                    Welkom bij het Telegraaf Horen CRM Systeem. Het systeem is geinitialiseerd en klaar voor gebruik.
+                </div>
+            </section>
+
+            <!-- Contacts Section -->
+            <section id="contacts" class="content-section">
+                <div class="section-header">
+                    <h2>Contacten</h2>
+                    <button id="add-contact-btn" class="btn btn-primary">+ Nieuw Contact</button>
+                </div>
+                <div id="contacts-list" class="contacts-container">
+                    <p class="loading">Contacten laden...</p>
+                </div>
+            </section>
+
+            <!-- Companies Section -->
+            <section id="companies" class="content-section">
+                <div class="section-header">
+                    <h2>Bedrijven</h2>
+                    <button id="add-company-btn" class="btn btn-primary">+ Nieuw Bedrijf</button>
+                </div>
+                <div id="companies-list" class="companies-container">
+                    <p class="loading">Bedrijven laden...</p>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="section-header">
+                    <h2>Instellingen</h2>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-group">
+                        <h3>Applicatie</h3>
+                        <p>CRM Versie: 1.0.0</p>
+                        <p id="server-info">Server informatie laden...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal for Add/Edit Contact -->
+        <div id="contact-modal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <h2>Contact Toevoegen</h2>
+                <form id="contact-form">
+                    <div class="form-group">
+                        <label for="contact-naam">Naam *</label>
+                        <input type="text" id="contact-naam" name="naam" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-email">Email</label>
+                        <input type="email" id="contact-email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-phone">Telefoonnummer</label>
+                        <input type="tel" id="contact-phone" name="telefoonnummer">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-company">Bedrijf</label>
+                        <input type="text" id="contact-company" name="bedrijf">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-type">Type</label>
+                        <select id="contact-type" name="type">
+                            <option value="klant">Klant</option>
+                            <option value="prospect">Prospect</option>
+                            <option value="partner">Partner</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-status">Status</label>
+                        <select id="contact-status" name="status">
+                            <option value="nieuw">Nieuw</option>
+                            <option value="in_bewerking">In Bewerking</option>
+                            <option value="actief">Actief</option>
+                            <option value="inactief">Inactief</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-notes">Notities</label>
+                        <textarea id="contact-notes" name="notities" rows="4"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary modal-close-btn">Annuleren</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Telegraaf Horen. Alle rechten voorbehouden.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
