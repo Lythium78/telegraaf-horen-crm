@@ -133,6 +133,27 @@ app.set('trust proxy', 1);
   try {
     await database.initDatabase();
     console.log('[INIT] Database initialized successfully');
+
+    // Auto-aanmaken eerste admin als er geen gebruikers zijn
+    // Gebruikt ADMIN_NAAM, ADMIN_GEBRUIKER, ADMIN_WACHTWOORD omgevingsvariabelen
+    const { hashWachtwoord } = require('./auth');
+    const gebruikers = database.getAllGebruikers();
+    if (gebruikers.length === 0) {
+      const adminNaam = process.env.ADMIN_NAAM;
+      const adminGebruiker = process.env.ADMIN_GEBRUIKER;
+      const adminWachtwoord = process.env.ADMIN_WACHTWOORD;
+
+      if (adminNaam && adminGebruiker && adminWachtwoord) {
+        console.log('[INIT] Geen gebruikers gevonden, eerste admin aanmaken...');
+        const hash = await hashWachtwoord(adminWachtwoord);
+        database.createGebruiker(adminNaam, adminGebruiker, hash, 'admin');
+        console.log(`[INIT] ✓ Admin aangemaakt: ${adminGebruiker}`);
+      } else {
+        console.log('[INIT] Geen gebruikers en geen ADMIN_* variabelen — stel ADMIN_NAAM, ADMIN_GEBRUIKER, ADMIN_WACHTWOORD in');
+      }
+    } else {
+      console.log(`[INIT] ${gebruikers.length} gebruiker(s) gevonden in database`);
+    }
   } catch (err) {
     console.error('[INIT] Database initialization failed:', err);
     process.exit(1);
