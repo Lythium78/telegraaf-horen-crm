@@ -424,10 +424,14 @@ app.delete('/api/contacts/:id', vereistInlog, vereistRol('admin'), (req, res) =>
 // 12. ERROR HANDLERS
 // ============================================================
 app.use((err, req, res, next) => {
-  console.error('[ERROR]', err.message);
+  console.error('[ERROR] Type:', err.constructor.name);
+  console.error('[ERROR] Message:', err.message);
+  console.error('[ERROR] Stack:', err.stack);
+  console.error('[ERROR] Route:', req.method, req.path);
   res.status(500).json({
     success: false,
-    error: 'Er is een interne fout opgetreden'
+    error: err.message || 'Er is een interne fout opgetreden',
+    debug_route: req.method + ' ' + req.path
   });
 });
 
