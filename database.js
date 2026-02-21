@@ -2,9 +2,16 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'crm.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'crm.db');
 let db = null;
 let SQL = null;
+
+// Zorg dat de map voor de database bestaat
+const dbDir = path.dirname(DB_PATH);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+  console.log('[DB] Created directory:', dbDir);
+}
 
 async function initDatabase() {
   try {
