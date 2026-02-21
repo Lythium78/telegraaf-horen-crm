@@ -1,160 +1,650 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegraaf Horen - CRM</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegraaf Horen - CRM</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">
-                    <img src="logo.svg" alt="Telegraaf Horen CRM" class="logo-image">
-                    <div class="logo-text">
-                        <h1>Telegraaf Horen</h1>
-                        <p class="tagline">CRM Systeem</p>
-                    </div>
-                </div>
-                <div class="header-info">
-                    <span id="connection-status" class="status-indicator">●</span>
-                    <span id="status-text">Verbinding controleren...</span>
-                </div>
-            </div>
-        </header>
+  <div class="app-layout">
 
-        <!-- Navigation -->
-        <nav class="navbar">
-            <ul class="nav-menu">
-                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
-                <li><a href="#contacts" class="nav-link">Contacten</a></li>
-                <li><a href="#companies" class="nav-link">Bedrijven</a></li>
-                <li><a href="#settings" class="nav-link">Instellingen</a></li>
-            </ul>
-        </nav>
+    <!-- Sidebar navigatie -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="logo.svg" alt="Telegraaf Horen" class="sidebar-logo-img">
+        <div class="sidebar-logo-text">
+          <span class="sidebar-title">Telegraaf Horen</span>
+          <span class="sidebar-subtitle">CRM</span>
+        </div>
+      </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Dashboard Section -->
-            <section id="dashboard" class="content-section active">
-                <div class="section-header">
-                    <h2>Dashboard</h2>
-                </div>
-                <div class="dashboard-grid">
-                    <div class="stat-card">
-                        <div class="stat-value">-</div>
-                        <div class="stat-label">Totale Contacten</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">-</div>
-                        <div class="stat-label">Actieve Contacten</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">-</div>
-                        <div class="stat-label">Bedrijven</div>
-                    </div>
-                </div>
-                <div id="dashboard-message" class="info-box">
-                    Welkom bij het Telegraaf Horen CRM Systeem. Het systeem is geinitialiseerd en klaar voor gebruik.
-                </div>
-            </section>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">&#9783;</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="leads">
+          <span class="nav-icon">&#9658;</span>
+          <span class="nav-label">Leads</span>
+        </button>
+        <button class="nav-item" data-section="klanten">
+          <span class="nav-icon">&#9786;</span>
+          <span class="nav-label">Klanten</span>
+        </button>
+        <button class="nav-item" data-section="taken">
+          <span class="nav-icon">&#9745;</span>
+          <span class="nav-label">Taken</span>
+        </button>
+        <button class="nav-item" data-section="bestellingen">
+          <span class="nav-icon">&#9783;</span>
+          <span class="nav-label">Bestellingen</span>
+        </button>
+        <button class="nav-item" data-section="nazorg">
+          <span class="nav-icon">&#9829;</span>
+          <span class="nav-label">Nazorg</span>
+        </button>
+      </nav>
 
-            <!-- Contacts Section -->
-            <section id="contacts" class="content-section">
-                <div class="section-header">
-                    <h2>Contacten</h2>
-                    <button id="add-contact-btn" class="btn btn-primary">+ Nieuw Contact</button>
-                </div>
-                <div id="contacts-list" class="contacts-container">
-                    <p class="loading">Contacten laden...</p>
-                </div>
-            </section>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <span class="user-avatar" id="user-avatar">-</span>
+          <span class="user-name" id="sidebar-user-name">Laden...</span>
+        </div>
+        <button class="btn-uitloggen" id="btn-uitloggen">Uitloggen</button>
+      </div>
+    </aside>
 
-            <!-- Companies Section -->
-            <section id="companies" class="content-section">
-                <div class="section-header">
-                    <h2>Bedrijven</h2>
-                    <button id="add-company-btn" class="btn btn-primary">+ Nieuw Bedrijf</button>
-                </div>
-                <div id="companies-list" class="companies-container">
-                    <p class="loading">Bedrijven laden...</p>
-                </div>
-            </section>
+    <!-- Hoofdinhoud -->
+    <main class="main-area">
 
-            <!-- Settings Section -->
-            <section id="settings" class="content-section">
-                <div class="section-header">
-                    <h2>Instellingen</h2>
-                </div>
-                <div class="settings-container">
-                    <div class="settings-group">
-                        <h3>Applicatie</h3>
-                        <p>CRM Versie: 1.0.0</p>
-                        <p id="server-info">Server informatie laden...</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Modal for Add/Edit Contact -->
-        <div id="contact-modal" class="modal">
-            <div class="modal-content">
-                <span class="modal-close">&times;</span>
-                <h2>Contact Toevoegen</h2>
-                <form id="contact-form">
-                    <div class="form-group">
-                        <label for="contact-naam">Naam *</label>
-                        <input type="text" id="contact-naam" name="naam" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-email">Email</label>
-                        <input type="email" id="contact-email" name="email">
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-phone">Telefoonnummer</label>
-                        <input type="tel" id="contact-phone" name="telefoonnummer">
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-company">Bedrijf</label>
-                        <input type="text" id="contact-company" name="bedrijf">
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-type">Type</label>
-                        <select id="contact-type" name="type">
-                            <option value="klant">Klant</option>
-                            <option value="prospect">Prospect</option>
-                            <option value="partner">Partner</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-status">Status</label>
-                        <select id="contact-status" name="status">
-                            <option value="nieuw">Nieuw</option>
-                            <option value="in_bewerking">In Bewerking</option>
-                            <option value="actief">Actief</option>
-                            <option value="inactief">Inactief</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-notes">Notities</label>
-                        <textarea id="contact-notes" name="notities" rows="4"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary modal-close-btn">Annuleren</button>
-                    </div>
-                </form>
-            </div>
+      <!-- ===== DASHBOARD ===== -->
+      <section id="section-dashboard" class="content-section active">
+        <div class="section-header">
+          <h1>Dashboard</h1>
+          <span class="header-datum" id="dashboard-datum"></span>
         </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; 2026 Telegraaf Horen. Alle rechten voorbehouden.</p>
-        </footer>
-    </div>
+        <div class="stats-grid" id="dashboard-stats">
+          <div class="stat-card" id="stat-leads">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Actieve Leads</div>
+            <div class="stat-sub">in pipeline</div>
+          </div>
+          <div class="stat-card" id="stat-klanten">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Klanten</div>
+            <div class="stat-sub">totaal</div>
+          </div>
+          <div class="stat-card" id="stat-taken">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Open Taken</div>
+            <div class="stat-sub">vandaag en verlopen</div>
+          </div>
+          <div class="stat-card" id="stat-bestellingen">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Bestellingen</div>
+            <div class="stat-sub">in behandeling</div>
+          </div>
+        </div>
 
-    <script src="app.js"></script>
+        <div class="dashboard-columns">
+          <div class="dashboard-col">
+            <div class="card">
+              <div class="card-header">
+                <h2>Mijn Taken Vandaag</h2>
+              </div>
+              <div id="dashboard-taken" class="card-body">
+                <p class="laden-tekst">Laden...</p>
+              </div>
+            </div>
+          </div>
+          <div class="dashboard-col">
+            <div class="card">
+              <div class="card-header">
+                <h2>Aankomende Nazorg</h2>
+              </div>
+              <div id="dashboard-nazorg" class="card-body">
+                <p class="laden-tekst">Laden...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== LEADS ===== -->
+      <section id="section-leads" class="content-section">
+        <div class="section-header">
+          <h1>Leads</h1>
+          <button class="btn btn-primary" id="btn-nieuwe-lead">+ Nieuwe Lead</button>
+        </div>
+
+        <!-- Pipeline funnel -->
+        <div class="pipeline-bar" id="pipeline-bar">
+          <div class="pipeline-fase actief" data-fase="alle">
+            <div class="pipeline-aantal" id="pipe-alle">0</div>
+            <div class="pipeline-label">Alle</div>
+          </div>
+          <div class="pipeline-fase" data-fase="lead">
+            <div class="pipeline-aantal" id="pipe-lead">0</div>
+            <div class="pipeline-label">Lead</div>
+          </div>
+          <div class="pipeline-fase" data-fase="gekwalificeerd">
+            <div class="pipeline-aantal" id="pipe-gekwalificeerd">0</div>
+            <div class="pipeline-label">Gekwalificeerd</div>
+          </div>
+          <div class="pipeline-fase" data-fase="intake_gepland">
+            <div class="pipeline-aantal" id="pipe-intake_gepland">0</div>
+            <div class="pipeline-label">Intake Gepland</div>
+          </div>
+          <div class="pipeline-fase" data-fase="klant">
+            <div class="pipeline-aantal" id="pipe-klant">0</div>
+            <div class="pipeline-label">Geworden Klant</div>
+          </div>
+          <div class="pipeline-fase" data-fase="inactief">
+            <div class="pipeline-aantal" id="pipe-inactief">0</div>
+            <div class="pipeline-label">Inactief</div>
+          </div>
+        </div>
+
+        <!-- Filters leads -->
+        <div class="filter-balk">
+          <input type="search" id="leads-zoek" class="zoekbalk" placeholder="Zoek op naam...">
+          <select id="leads-filter-herkomst" class="filter-select">
+            <option value="">Alle herkomsten</option>
+            <option value="Telefonisch">Telefonisch</option>
+            <option value="Doorverwijzing">Doorverwijzing</option>
+            <option value="Website">Website</option>
+            <option value="Inloop">Inloop</option>
+          </select>
+        </div>
+
+        <div id="leads-lijst" class="items-lijst">
+          <p class="laden-tekst">Laden...</p>
+        </div>
+      </section>
+
+      <!-- ===== KLANTEN ===== -->
+      <section id="section-klanten" class="content-section">
+        <div class="section-header">
+          <h1>Klanten</h1>
+          <button class="btn btn-primary" id="btn-nieuwe-klant">+ Nieuwe Klant</button>
+        </div>
+
+        <div class="filter-balk">
+          <input type="search" id="klanten-zoek" class="zoekbalk" placeholder="Zoek op naam of klantnummer...">
+        </div>
+
+        <div class="klanten-layout">
+          <!-- Klantenlijst -->
+          <div id="klanten-lijst" class="klanten-lijst-panel">
+            <p class="laden-tekst">Laden...</p>
+          </div>
+
+          <!-- Klant detail panel -->
+          <div id="klant-detail" class="klant-detail-panel verborgen">
+            <div class="klant-detail-header">
+              <div>
+                <h2 id="klant-detail-naam">-</h2>
+                <p id="klant-detail-klantnummer" class="klant-detail-sub"></p>
+              </div>
+              <div class="klant-detail-acties">
+                <button class="btn btn-secondary btn-small" id="btn-klant-bewerken">Bewerken</button>
+                <button class="btn btn-danger btn-small" id="btn-klant-verwijderen">Verwijderen</button>
+                <button class="btn btn-ghost btn-small" id="btn-klant-sluiten">Sluiten</button>
+              </div>
+            </div>
+
+            <!-- Tabs klantdetail -->
+            <div class="detail-tabs">
+              <button class="detail-tab actief" data-tab="profiel">Profiel</button>
+              <button class="detail-tab" data-tab="hoortoestellen">Hoortoestellen</button>
+              <button class="detail-tab" data-tab="notities">Notities</button>
+              <button class="detail-tab" data-tab="bestellingen-klant">Bestellingen</button>
+            </div>
+
+            <div id="tab-profiel" class="detail-tab-inhoud actief">
+              <div id="klant-profiel-inhoud" class="profiel-grid"></div>
+            </div>
+
+            <div id="tab-hoortoestellen" class="detail-tab-inhoud">
+              <div class="tab-actie-balk">
+                <button class="btn btn-primary btn-small" id="btn-nieuw-hoortoestel">+ Hoortoestel Toevoegen</button>
+              </div>
+              <div id="hoortoestellen-inhoud"></div>
+            </div>
+
+            <div id="tab-notities" class="detail-tab-inhoud">
+              <div class="tab-actie-balk">
+                <button class="btn btn-primary btn-small" id="btn-nieuwe-notitie-klant">+ Notitie Toevoegen</button>
+              </div>
+              <div id="klant-notities-inhoud"></div>
+            </div>
+
+            <div id="tab-bestellingen-klant" class="detail-tab-inhoud">
+              <div class="tab-actie-balk">
+                <button class="btn btn-primary btn-small" id="btn-nieuwe-bestelling-klant">+ Bestelling Toevoegen</button>
+              </div>
+              <div id="klant-bestellingen-inhoud"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TAKEN ===== -->
+      <section id="section-taken" class="content-section">
+        <div class="section-header">
+          <h1>Taken</h1>
+          <button class="btn btn-primary" id="btn-nieuwe-taak">+ Nieuwe Taak</button>
+        </div>
+
+        <div class="filter-balk">
+          <select id="taken-filter-status" class="filter-select">
+            <option value="">Alle statussen</option>
+            <option value="open">Open</option>
+            <option value="in_uitvoering">In Uitvoering</option>
+            <option value="afgerond">Afgerond</option>
+          </select>
+        </div>
+
+        <div class="taken-secties">
+          <div class="card">
+            <div class="card-header">
+              <h2>Mijn Open Taken</h2>
+            </div>
+            <div id="mijn-taken-lijst" class="card-body">
+              <p class="laden-tekst">Laden...</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Alle Taken</h2>
+            </div>
+            <div id="alle-taken-lijst" class="card-body">
+              <p class="laden-tekst">Laden...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== BESTELLINGEN ===== -->
+      <section id="section-bestellingen" class="content-section">
+        <div class="section-header">
+          <h1>Bestellingen</h1>
+        </div>
+
+        <div class="filter-balk">
+          <select id="bestellingen-filter-status" class="filter-select">
+            <option value="">Alle statussen</option>
+            <option value="besteld">Besteld</option>
+            <option value="klaar">Klaar voor afhaling</option>
+            <option value="geleverd">Geleverd</option>
+          </select>
+        </div>
+
+        <div id="bestellingen-lijst" class="items-lijst">
+          <p class="laden-tekst">Laden...</p>
+        </div>
+      </section>
+
+      <!-- ===== NAZORG ===== -->
+      <section id="section-nazorg" class="content-section">
+        <div class="section-header">
+          <h1>Nazorg</h1>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Aankomende Check-ups (1 jaar)</h2>
+          </div>
+          <div id="nazorg-checkups" class="card-body">
+            <p class="laden-tekst">Laden...</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <h2>Garantie Verloopt Binnenkort (5 jaar)</h2>
+          </div>
+          <div id="nazorg-garantie" class="card-body">
+            <p class="laden-tekst">Laden...</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================
+       MODALS
+       ============================ -->
+
+  <!-- Modal: Nieuwe / Bewerken Lead -->
+  <div id="modal-lead" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-lead-titel">
+    <div class="modal-content">
+      <button class="modal-sluit" data-modal="modal-lead" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-lead-titel" class="modal-titel">Nieuwe Lead</h2>
+      <form id="form-lead" novalidate>
+        <input type="hidden" id="lead-id">
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="lead-naam">Naam *</label>
+            <input type="text" id="lead-naam" required maxlength="200">
+          </div>
+          <div class="form-groep">
+            <label for="lead-telefoon">Telefoonnummer</label>
+            <input type="tel" id="lead-telefoon" maxlength="30">
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="lead-email">E-mailadres</label>
+            <input type="email" id="lead-email" maxlength="254">
+          </div>
+          <div class="form-groep">
+            <label for="lead-herkomst">Herkomst</label>
+            <select id="lead-herkomst">
+              <option value="">Selecteer...</option>
+              <option value="Telefonisch">Telefonisch</option>
+              <option value="Doorverwijzing">Doorverwijzing</option>
+              <option value="Website">Website</option>
+              <option value="Inloop">Inloop</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="lead-status">Status</label>
+            <select id="lead-status">
+              <option value="lead">Lead</option>
+              <option value="gekwalificeerd">Gekwalificeerd</option>
+              <option value="intake_gepland">Intake Gepland</option>
+              <option value="klant">Geworden Klant</option>
+              <option value="inactief">Inactief</option>
+            </select>
+          </div>
+          <div class="form-groep">
+            <label for="lead-datum">Datum eerste contact</label>
+            <input type="date" id="lead-datum">
+          </div>
+        </div>
+        <div class="form-groep">
+          <label for="lead-notitie">Notities</label>
+          <textarea id="lead-notitie" rows="3" maxlength="2000"></textarea>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-lead">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nieuwe / Bewerken Klant -->
+  <div id="modal-klant" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-klant-titel">
+    <div class="modal-content modal-content-groot">
+      <button class="modal-sluit" data-modal="modal-klant" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-klant-titel" class="modal-titel">Nieuwe Klant</h2>
+      <form id="form-klant" novalidate>
+        <input type="hidden" id="klant-id">
+        <div class="form-sectie-label">Persoonlijke gegevens</div>
+        <div class="form-rij">
+          <div class="form-groep form-groep-smal">
+            <label for="klant-aanhef">Aanhef</label>
+            <select id="klant-aanhef">
+              <option value="">-</option>
+              <option value="Dhr.">Dhr.</option>
+              <option value="Mevr.">Mevr.</option>
+              <option value="Dhr./Mevr.">Dhr./Mevr.</option>
+            </select>
+          </div>
+          <div class="form-groep">
+            <label for="klant-naam">Naam *</label>
+            <input type="text" id="klant-naam" required maxlength="200">
+          </div>
+          <div class="form-groep">
+            <label for="klant-geboortedatum">Geboortedatum</label>
+            <input type="date" id="klant-geboortedatum">
+          </div>
+        </div>
+        <div class="form-sectie-label">Contactgegevens</div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="klant-telefoon">Telefoonnummer</label>
+            <input type="tel" id="klant-telefoon" maxlength="30">
+          </div>
+          <div class="form-groep">
+            <label for="klant-mobiel">Mobiel</label>
+            <input type="tel" id="klant-mobiel" maxlength="30">
+          </div>
+          <div class="form-groep">
+            <label for="klant-email">E-mailadres</label>
+            <input type="email" id="klant-email" maxlength="254">
+          </div>
+        </div>
+        <div class="form-sectie-label">Adresgegevens</div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="klant-adres">Adres</label>
+            <input type="text" id="klant-adres" maxlength="200">
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep form-groep-smal">
+            <label for="klant-postcode">Postcode</label>
+            <input type="text" id="klant-postcode" maxlength="10">
+          </div>
+          <div class="form-groep">
+            <label for="klant-woonplaats">Woonplaats</label>
+            <input type="text" id="klant-woonplaats" maxlength="100">
+          </div>
+        </div>
+        <div class="form-sectie-label">Medisch / administratief</div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="klant-huisarts">Huisarts</label>
+            <input type="text" id="klant-huisarts" maxlength="200">
+          </div>
+          <div class="form-groep">
+            <label for="klant-voorschrijver">Voorschrijver</label>
+            <input type="text" id="klant-voorschrijver" maxlength="200">
+          </div>
+          <div class="form-groep">
+            <label for="klant-klantnummer-extern">Extern klantnummer</label>
+            <input type="text" id="klant-klantnummer-extern" maxlength="100">
+          </div>
+        </div>
+        <div class="form-groep">
+          <label for="klant-notities">Notities</label>
+          <textarea id="klant-notities" rows="3" maxlength="2000"></textarea>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-klant">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Hoortoestel toevoegen/bewerken -->
+  <div id="modal-hoortoestel" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-hoortoestel-titel">
+    <div class="modal-content">
+      <button class="modal-sluit" data-modal="modal-hoortoestel" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-hoortoestel-titel" class="modal-titel">Hoortoestel Toevoegen</h2>
+      <form id="form-hoortoestel" novalidate>
+        <input type="hidden" id="hoortoestel-id">
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="hoortoestel-merk">Merk</label>
+            <input type="text" id="hoortoestel-merk" maxlength="100">
+          </div>
+          <div class="form-groep">
+            <label for="hoortoestel-type">Type</label>
+            <input type="text" id="hoortoestel-type" maxlength="100">
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="hoortoestel-serienummer-links">Serienummer Links</label>
+            <input type="text" id="hoortoestel-serienummer-links" maxlength="100">
+          </div>
+          <div class="form-groep">
+            <label for="hoortoestel-serienummer-rechts">Serienummer Rechts</label>
+            <input type="text" id="hoortoestel-serienummer-rechts" maxlength="100">
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="hoortoestel-kleur">Kleur</label>
+            <input type="text" id="hoortoestel-kleur" maxlength="50">
+          </div>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="hoortoestel-leverdatum">Leverdatum</label>
+            <input type="date" id="hoortoestel-leverdatum">
+          </div>
+          <div class="form-groep">
+            <label for="hoortoestel-factuurdatum">Factuurdatum</label>
+            <input type="date" id="hoortoestel-factuurdatum">
+          </div>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-hoortoestel">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nieuwe Taak -->
+  <div id="modal-taak" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-taak-titel">
+    <div class="modal-content">
+      <button class="modal-sluit" data-modal="modal-taak" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-taak-titel" class="modal-titel">Nieuwe Taak</h2>
+      <form id="form-taak" novalidate>
+        <input type="hidden" id="taak-id">
+        <div class="form-groep">
+          <label for="taak-titel">Titel *</label>
+          <input type="text" id="taak-titel" required maxlength="200">
+        </div>
+        <div class="form-groep">
+          <label for="taak-omschrijving">Omschrijving</label>
+          <textarea id="taak-omschrijving" rows="3" maxlength="1000"></textarea>
+        </div>
+        <div class="form-rij">
+          <div class="form-groep">
+            <label for="taak-deadline">Deadline</label>
+            <input type="date" id="taak-deadline">
+          </div>
+          <div class="form-groep">
+            <label for="taak-prioriteit">Prioriteit</label>
+            <select id="taak-prioriteit">
+              <option value="laag">Laag</option>
+              <option value="normaal" selected>Normaal</option>
+              <option value="hoog">Hoog</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-groep">
+          <label for="taak-contact-id">Gekoppelde klant (optioneel)</label>
+          <select id="taak-contact-id">
+            <option value="">Geen klant gekoppeld</option>
+          </select>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-taak">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nieuwe Bestelling -->
+  <div id="modal-bestelling" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-bestelling-titel">
+    <div class="modal-content">
+      <button class="modal-sluit" data-modal="modal-bestelling" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-bestelling-titel" class="modal-titel">Nieuwe Bestelling</h2>
+      <form id="form-bestelling" novalidate>
+        <input type="hidden" id="bestelling-id">
+        <input type="hidden" id="bestelling-contact-id">
+        <div class="form-groep">
+          <label for="bestelling-klant-weergave">Klant</label>
+          <input type="text" id="bestelling-klant-weergave" readonly class="readonly-veld">
+        </div>
+        <div class="form-groep">
+          <label for="bestelling-bezorgmethode">Bezorgmethode</label>
+          <select id="bestelling-bezorgmethode">
+            <option value="afhalen">Afhalen in winkel</option>
+            <option value="post">Per post</option>
+          </select>
+        </div>
+        <div class="form-groep">
+          <label>Artikelen</label>
+          <div id="bestelling-regels">
+            <div class="bestelling-regel">
+              <select class="regel-type">
+                <option value="">Selecteer artikel...</option>
+                <option value="Batterijen">Batterijen</option>
+                <option value="Domes">Domes</option>
+                <option value="Filters">Filters</option>
+                <option value="Reinigingsmiddelen">Reinigingsmiddelen</option>
+                <option value="Accessoires">Accessoires</option>
+              </select>
+              <input type="number" class="regel-hoeveelheid" min="1" value="1" placeholder="Aantal">
+              <button type="button" class="btn btn-danger btn-small regel-verwijder">-</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-small" id="btn-regel-toevoegen">+ Artikel Toevoegen</button>
+        </div>
+        <div class="form-groep">
+          <label for="bestelling-notities">Notities</label>
+          <textarea id="bestelling-notities" rows="2" maxlength="500"></textarea>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Bestelling Plaatsen</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-bestelling">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Notitie toevoegen -->
+  <div id="modal-notitie" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-notitie-titel">
+    <div class="modal-content modal-content-klein">
+      <button class="modal-sluit" data-modal="modal-notitie" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-notitie-titel" class="modal-titel">Notitie Toevoegen</h2>
+      <form id="form-notitie" novalidate>
+        <input type="hidden" id="notitie-resource-type">
+        <input type="hidden" id="notitie-resource-id">
+        <div class="form-groep">
+          <label for="notitie-tekst">Notitie *</label>
+          <textarea id="notitie-tekst" rows="5" required maxlength="2000" placeholder="Voer uw notitie in..."></textarea>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-notitie">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast notificaties -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Bevestigingsdialoog -->
+  <div id="bevestig-dialoog" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content modal-content-klein">
+      <h2 class="modal-titel" id="bevestig-vraag">Weet u het zeker?</h2>
+      <p id="bevestig-tekst" class="bevestig-tekst"></p>
+      <div class="form-acties">
+        <button class="btn btn-danger" id="bevestig-ja">Ja, verwijderen</button>
+        <button class="btn btn-secondary" id="bevestig-nee">Annuleren</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
