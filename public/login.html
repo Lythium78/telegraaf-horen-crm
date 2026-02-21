@@ -222,7 +222,7 @@
             required
             maxlength="50"
             placeholder="Voer uw gebruikersnaam in"
-            disabled
+            autofocus
           >
         </div>
 
@@ -236,7 +236,6 @@
             required
             maxlength="128"
             placeholder="Voer uw wachtwoord in"
-            disabled
           >
         </div>
 
@@ -253,13 +252,6 @@
   </div>
 
   <script>
-    // Enable form inputs once page loads
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('username').disabled = false;
-      document.getElementById('password').disabled = false;
-      document.getElementById('username').focus();
-    });
-
     async function handleLogin(event) {
       event.preventDefault();
 
