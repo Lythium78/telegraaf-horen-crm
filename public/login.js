@@ -30,21 +30,27 @@ async function handleLogin(event) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({
         gebruikersnaam: username,
         wachtwoord: password
       })
     });
 
+    console.log('Login response status:', response.status);
+
     const data = await response.json();
+    console.log('Login response data:', data);
 
     if (data.success) {
       // Redirect to dashboard
+      console.log('Login successful, redirecting...');
       window.location.href = '/';
     } else {
       // Show error message
       alertDiv.textContent = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
       alertDiv.classList.add('show');
+      console.log('Login failed:', data.error);
 
       // Clear password field
       document.getElementById('password').value = '';
@@ -54,6 +60,7 @@ async function handleLogin(event) {
     alertDiv.textContent = 'Verbindingsfout. Controleer uw internetverbinding.';
     alertDiv.classList.add('show');
     console.error('Login error:', err);
+    console.error('Error details:', err.message, err.stack);
   } finally {
     // Re-enable button
     submitBtn.disabled = false;
