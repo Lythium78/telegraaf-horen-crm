@@ -187,7 +187,7 @@ app.post('/setup-eerste-admin', async (req, res) => {
     res.json({ success: true, message: `Admin '${gebruikersnaam}' aangemaakt! Je kunt nu inloggen.` });
   } catch (err) {
     console.error('[SETUP] Error:', err);
-    res.status(500).json({ success: false, error: 'Fout bij aanmaken admin' });
+    res.status(500).json({ success: false, error: err.message || 'Fout bij aanmaken admin' });
   }
 });
 
