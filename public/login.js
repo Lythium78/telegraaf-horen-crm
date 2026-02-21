@@ -26,6 +26,8 @@ async function handleLogin(event) {
   submitBtn.innerHTML = '<span class="loading-spinner"></span>Bezig...';
 
   try {
+    console.log('[Login] Sending POST request to /login...');
+
     const response = await fetch('/login', {
       method: 'POST',
       headers: {
@@ -38,20 +40,32 @@ async function handleLogin(event) {
       })
     });
 
-    console.log('Login response status:', response.status);
+    console.log('[Login] Response received:', response.status, response.statusText);
 
-    const data = await response.json();
-    console.log('Login response data:', data);
+    let data;
+    try {
+      data = await response.json();
+      console.log('[Login] Response JSON:', data);
+    } catch (parseErr) {
+      console.error('[Login] Failed to parse response as JSON:', parseErr);
+      alertDiv.textContent = 'Serverfout: Ongeldige respons';
+      alertDiv.classList.add('show');
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+      return;
+    }
 
     if (response.status === 200 && data.success) {
       // Redirect to dashboard
-      console.log('Login successful, redirecting...');
-      window.location.href = '/';
+      console.log('[Login] ✓ Login successful, redirecting to /...');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     } else if (response.status === 401) {
       // Authentication failed
       alertDiv.textContent = 'Gebruikersnaam of wachtwoord onjuist';
       alertDiv.classList.add('show');
-      console.log('Login failed: 401 Unauthorized');
+      console.log('[Login] ✗ Login failed: 401 Unauthorized');
 
       // Clear password field
       document.getElementById('password').value = '';
@@ -62,9 +76,10 @@ async function handleLogin(event) {
       submitBtn.textContent = originalText;
     } else {
       // Other error
-      alertDiv.textContent = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
+      const errorMsg = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
+      alertDiv.textContent = errorMsg;
       alertDiv.classList.add('show');
-      console.log('Login failed:', response.status, data);
+      console.log('[Login] ✗ Login failed:', response.status, data);
 
       // Clear password field
       document.getElementById('password').value = '';
@@ -75,17 +90,16 @@ async function handleLogin(event) {
       submitBtn.textContent = originalText;
     }
   } catch (err) {
+    console.error('[Login] ✗ Fetch error:', err);
+    console.error('[Login] Error message:', err.message);
+    console.error('[Login] Error stack:', err.stack);
+
     alertDiv.textContent = 'Verbindingsfout. Controleer uw internetverbinding.';
     alertDiv.classList.add('show');
-    console.error('Login error:', err);
-    console.error('Error details:', err.message, err.stack);
 
     // Re-enable button immediately on error
     submitBtn.disabled = false;
     submitBtn.textContent = originalText;
-  } finally {
-    // Only re-enable button on success path (already done in catch)
-    // This prevents duplicate button state changes
   }
 }
 
