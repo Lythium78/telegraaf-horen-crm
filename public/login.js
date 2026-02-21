@@ -103,14 +103,10 @@ async function handleLogin(event) {
   }
 }
 
-// Allow Enter key to submit
+// Koppel submit event aan formulier (geen inline handler vanwege CSP)
 document.addEventListener('DOMContentLoaded', () => {
-  const passwordInput = document.getElementById('password');
-  if (passwordInput) {
-    passwordInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        document.getElementById('login-form').dispatchEvent(new Event('submit'));
-      }
-    });
+  const form = document.getElementById('login-form');
+  if (form) {
+    form.addEventListener('submit', handleLogin);
   }
 });

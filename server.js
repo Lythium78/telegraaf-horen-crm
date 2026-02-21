@@ -86,7 +86,6 @@ const loginLimiet = rateLimit({
 });
 
 app.use('/api/', algemeenLimiet);
-app.use('/login', loginLimiet);
 
 // ============================================================
 // 4. SESSIE CONFIGURATIE
@@ -95,13 +94,17 @@ if (!fs.existsSync(path.join(__dirname, 'logs'))) {
   fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
 }
 
-// DEBUG: Tijdelijk in-memory sessies (geen connect-sqlite3) om probleem te isoleren
-console.log('[DEBUG] Sessies: in-memory store (debug mode)');
+const sessionStore = IS_PRODUCTIE
+  ? new SQLiteStore({ db: 'sessies.db' })
+  : undefined;
+
+console.log('[INIT] Sessies: ' + (sessionStore ? 'SQLiteStore (persistent)' : 'in-memory store (development)'));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || (() => {
     throw new Error('SESSION_SECRET niet ingesteld in .env!');
   })(),
+  store: sessionStore,
   name: 'th_crm_sessie',
   resave: false,
   saveUninitialized: false,
@@ -213,7 +216,7 @@ app.post('/setup-eerste-admin', async (req, res) => {
 // 10. AUTHENTICATIE ROUTES
 // ============================================================
 
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiet, async (req, res) => {
   try {
     const { gebruikersnaam, wachtwoord } = req.body;
 
@@ -228,7 +231,7 @@ app.post('/login', async (req, res) => {
     const gebruiker = await verificeerInlog(schoneNaam, wachtwoord);
 
     if (!gebruiker) {
-      auditLog(null, 'inlog_mislukt', null, null, req.ip);
+      auditLog('inlog_mislukt', 'onbekend', null, { ip: req.ip });
       return res.status(401).json({
         success: false,
         error: 'Gebruikersnaam of wachtwoord onjuist'
@@ -243,7 +246,7 @@ app.post('/login', async (req, res) => {
 
       req.session.gebruiker = gebruiker;
       database.updateLaatsteLogin(gebruiker.id);
-      auditLog(gebruiker.id, 'ingelogd', null, null, req.ip);
+      auditLog('ingelogd', gebruiker.gebruikersnaam, null, { ip: req.ip });
 
       res.json({
         success: true,
@@ -261,7 +264,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => {
   if (req.session.gebruiker) {
-    auditLog(req.session.gebruiker.id, 'uitgelogd', null, null, req.ip);
+    auditLog('uitgelogd', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
   }
   req.session.destroy((err) => {
     res.clearCookie('th_crm_sessie');
@@ -307,7 +310,7 @@ app.get('/api/mij', vereistInlog, (req, res) => {
 app.get('/api/contacts', vereistInlog, (req, res) => {
   try {
     const contacts = database.getAllContacts();
-    auditLog(req.session.gebruiker.id, 'contacts_opgelijst', null, null, req.ip);
+    auditLog('contacts_opgelijst', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
     res.json({ success: true, data: contacts });
   } catch (err) {
     console.error('[API] Error fetching contacts:', err);
@@ -328,7 +331,7 @@ app.get('/api/contacts/:id', vereistInlog, (req, res) => {
       return res.status(404).json({ success: false, error: 'Contact niet gevonden' });
     }
 
-    auditLog(req.session.gebruiker.id, 'contact_bekeken', 'contact', id, req.ip);
+    auditLog('contact_bekeken', req.session.gebruiker.gebruikersnaam, id, { ip: req.ip });
     res.json({ success: true, data: contact });
   } catch (err) {
     console.error('[API] Error fetching contact:', err);
@@ -360,7 +363,7 @@ app.post('/api/contacts', vereistInlog, vereistRol('medewerker'), (req, res) => 
       notities: notities ? String(notities).trim().substring(0, 2000) : null
     });
 
-    auditLog(req.session.gebruiker.id, 'contact_aangemaakt', 'contact', contact.id, req.ip);
+    auditLog('contact_aangemaakt', req.session.gebruiker.gebruikersnaam, contact.id, { ip: req.ip });
     res.status(201).json({ success: true, data: contact });
   } catch (err) {
     console.error('[API] Error creating contact:', err);
@@ -395,7 +398,7 @@ app.put('/api/contacts/:id', vereistInlog, vereistRol('medewerker'), (req, res) 
       ? String(notities).trim().substring(0, 2000) : null;
 
     const contact = database.updateContact(id, updateData);
-    auditLog(req.session.gebruiker.id, 'contact_bijgewerkt', 'contact', id, req.ip);
+    auditLog('contact_bijgewerkt', req.session.gebruiker.gebruikersnaam, id, { ip: req.ip });
     res.json({ success: true, data: contact });
   } catch (err) {
     console.error('[API] Error updating contact:', err);
@@ -412,7 +415,7 @@ app.delete('/api/contacts/:id', vereistInlog, vereistRol('admin'), (req, res) =>
     }
 
     database.deleteContact(id);
-    auditLog(req.session.gebruiker.id, 'contact_verwijderd', 'contact', id, req.ip);
+    auditLog('contact_verwijderd', req.session.gebruiker.gebruikersnaam, id, { ip: req.ip });
     res.json({ success: true, message: 'Contact verwijderd' });
   } catch (err) {
     console.error('[API] Error deleting contact:', err);
@@ -428,11 +431,13 @@ app.use((err, req, res, next) => {
   console.error('[ERROR] Message:', err.message);
   console.error('[ERROR] Stack:', err.stack);
   console.error('[ERROR] Route:', req.method, req.path);
-  res.status(500).json({
+
+  const errorResponse = {
     success: false,
-    error: err.message || 'Er is een interne fout opgetreden',
-    debug_route: req.method + ' ' + req.path
-  });
+    error: IS_PRODUCTIE ? 'Er is een interne fout opgetreden' : err.message
+  };
+
+  res.status(500).json(errorResponse);
 });
 
 app.use((req, res) => {

@@ -77,8 +77,9 @@ audit_log:
 
 **`logger.js`** (65 lines)
 - Winston transport setup (audit.log, error.log)
-- `auditLog()` — NEVER logs PII, only: actie, gebruiker, resource_id, timestamp, ip
+- `auditLog(actie, gebruikersnaam, resourceId, extra)` — signature in this exact order
 - `logError()` — for debugging (stack traces are safe)
+- ⚠️ `database.js` has a separate `logAudit()` — these are two independent systems. `server.js` uses only `logger.js`'s `auditLog()`
 
 **`create-admin.js`** (50 lines)
 - CLI tool: `node create-admin.js "Naam" "username" "password"`
@@ -88,10 +89,13 @@ audit_log:
 
 **`public/login.html`** (220 lines)
 - Telegraaf Horen branded login form
-- Async fetch to `/login` endpoint
+- Async fetch to `/login` endpoint via `public/login.js`
 - Shows error on failed auth (vague message, no user enumeration)
-- Auto-focus, Enter key support
-- Styling: responsive, accessible
+- ⚠️ CSP: NO inline event handlers allowed (`onsubmit`, `onclick` etc. are blocked by Helmet's `script-src-attr: 'none'`). All event listeners must be in `login.js` via `addEventListener`
+
+**`public/login.js`** (110 lines)
+- Handles login form submission via `addEventListener('submit', handleLogin)`
+- Manages loading state, error display, and redirect on success
 
 ### Configuration Files
 
@@ -103,6 +107,10 @@ SESSION_SECRET=[64-char random, generated once]
 TOEGESTAAN_ORIGIN=http://localhost:3001|https://app.railway.app
 DB_PATH=./crm.db
 LOG_DIR=./logs
+# Auto-admin bij lege database (exact deze namen — server.js leest ADMIN_NAAM + ADMIN_GEBRUIKER + ADMIN_WACHTWOORD):
+ADMIN_NAAM=Mield
+ADMIN_GEBRUIKER=mield
+ADMIN_WACHTWOORD=SterkWachtwoord123!
 ```
 
 **`.env.template`** (for distribution)
@@ -139,13 +147,13 @@ npm run create:admin -- "Mield" "mield" "YourPassword123!"
 1. **Add middleware stacking** in `server.js`:
    ```javascript
    app.get('/api/custom', vereistInlog, vereistRol('medewerker'), (req, res) => {
-     auditLog(req.session.gebruiker.id, 'custom_action', 'resource_type', id, req.ip);
+     auditLog('custom_actie', req.session.gebruiker.gebruikersnaam, resourceId, { ip: req.ip });
      res.json({ success: true, data: ... });
    });
    ```
    - ALWAYS include `vereistInlog`
    - Add `vereistRol()` if only certain roles should access
-   - ALWAYS call `auditLog()` for mutations
+   - ALWAYS call `auditLog()` for mutations — signature: `(actie, gebruikersnaam, resourceId, extra)`
    - NEVER expose error messages: catch and log, return generic error
 
 2. **Database functions** in `database.js`:
@@ -280,8 +288,11 @@ if (!geldige_types.includes(type)) type = 'klant';
 
 ### Middleware Stacking
 ```javascript
-// Protect all /api routes
-app.use('/api/', algemeenLimiet);  // Rate limit first
+// Rate limit all /api routes
+app.use('/api/', algemeenLimiet);
+
+// Login rate limit: only on POST (NOT app.use('/login') — that would also block GET page loads)
+app.post('/login', loginLimiet, async (req, res) => {...});
 
 // Protect specific route
 app.post('/api/contacts', vereistInlog, vereistRol('medewerker'), (req, res) => {...});
@@ -359,8 +370,12 @@ crm-project/
 - **Port 3001 conflict** — Intake Tracker may be running, change PORT or kill old process
 - **SQLite concurrency** — sql.js locks entire DB during write (acceptable for this scale)
 - **Session timeout** — 8 hours, auto-logout may surprise users
-- **Rate limiting** — Legitimate users get blocked after 5 failed logins for 15 min
+- **Rate limiting** — Legitimate users get blocked after 5 failed logins for 15 min; limiter is on `app.post('/login')` only — NOT `app.use('/login')`
 - **bcryptjs is slow** — By design (200ms per hash), DO NOT reduce rounds below 12
+- **CSP blocks inline handlers** — Helmet sets `script-src-attr: 'none'`. Never add `onsubmit`, `onclick` etc. directly in HTML. All handlers must be in `.js` files using `addEventListener`
+- **Edge vs Chrome** — Edge enforces CSP more strictly than Chrome. Test login in Edge after any login.html changes
+- **`.env` variable names** — `server.js` reads `ADMIN_NAAM`, `ADMIN_GEBRUIKER`, `ADMIN_WACHTWOORD`. Using wrong names (e.g. `ADMIN_GEBRUIKERSNAAM`) silently skips auto-admin creation
+- **Sessions in development** — In-memory store (development); SQLiteStore only in production. Sessions lost on every server restart during dev
 
 ### 📌 Remember
 - **Phase 1 = Security baseline** — Features (search, dashboard) come in Phase 2
@@ -395,4 +410,4 @@ Not in Phase 1, but planned:
 
 ---
 
-**Last Updated:** Feb 20, 2026 | Phase: 1 (Security Foundation) | Status: LIVE on Railway
+**Last Updated:** Feb 21, 2026 | Phase: 1 (Security Foundation) | Status: Lokaal LIVE — Railway deployment gepland
