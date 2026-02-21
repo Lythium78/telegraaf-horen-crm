@@ -217,43 +217,49 @@ app.post('/setup-eerste-admin', async (req, res) => {
 // ============================================================
 
 app.post('/login', async (req, res) => {
-  const { gebruikersnaam, wachtwoord } = req.body;
+  try {
+    const { gebruikersnaam, wachtwoord } = req.body;
 
-  if (!gebruikersnaam || !wachtwoord) {
-    return res.status(400).json({
-      success: false,
-      error: 'Gebruikersnaam en wachtwoord zijn verplicht'
-    });
-  }
-
-  const schoneNaam = String(gebruikersnaam).trim().toLowerCase().substring(0, 50);
-  const gebruiker = await verificeerInlog(schoneNaam, wachtwoord);
-
-  if (!gebruiker) {
-    auditLog(null, 'inlog_mislukt', null, null, req.ip);
-    return res.status(401).json({
-      success: false,
-      error: 'Gebruikersnaam of wachtwoord onjuist'
-    });
-  }
-
-  req.session.regenerate((err) => {
-    if (err) {
-      return res.status(500).json({ success: false, error: 'Inloggen mislukt' });
+    if (!gebruikersnaam || !wachtwoord) {
+      return res.status(400).json({
+        success: false,
+        error: 'Gebruikersnaam en wachtwoord zijn verplicht'
+      });
     }
 
-    req.session.gebruiker = gebruiker;
-    database.updateLaatsteLogin(gebruiker.id);
-    auditLog(gebruiker.id, 'ingelogd', null, null, req.ip);
+    const schoneNaam = String(gebruikersnaam).trim().toLowerCase().substring(0, 50);
+    const gebruiker = await verificeerInlog(schoneNaam, wachtwoord);
 
-    res.json({
-      success: true,
-      gebruiker: {
-        naam: gebruiker.naam,
-        rol: gebruiker.rol
+    if (!gebruiker) {
+      auditLog(null, 'inlog_mislukt', null, null, req.ip);
+      return res.status(401).json({
+        success: false,
+        error: 'Gebruikersnaam of wachtwoord onjuist'
+      });
+    }
+
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('[LOGIN] Session regenerate error:', err);
+        return res.status(500).json({ success: false, error: 'Inloggen mislukt' });
       }
+
+      req.session.gebruiker = gebruiker;
+      database.updateLaatsteLogin(gebruiker.id);
+      auditLog(gebruiker.id, 'ingelogd', null, null, req.ip);
+
+      res.json({
+        success: true,
+        gebruiker: {
+          naam: gebruiker.naam,
+          rol: gebruiker.rol
+        }
+      });
     });
-  });
+  } catch (err) {
+    console.error('[LOGIN] Unexpected error:', err);
+    res.status(500).json({ success: false, error: 'Inloggen mislukt door een serverfout' });
+  }
 });
 
 app.get('/logout', (req, res) => {

@@ -61,8 +61,9 @@ async function verificeerInlog(gebruikersnaam, wachtwoord) {
   const gebruiker = database.getGebruikerByNaam(gebruikersnaam);
 
   if (!gebruiker) {
-    // Gelijke timing: doe hashing ook al gebruiker niet bestaat
-    await bcrypt.compare(wachtwoord, '$2b$12$invalide.hash.zodat.timing.gelijk.is.xxxxx');
+    // Gelijke timing: doe hashing ook al gebruiker niet bestaat (voorkomt user enumeration)
+    // Gebruik een valide bcrypt hash formaat (60 tekens: $2b$12$ + 22 salt + 31 hash)
+    await bcrypt.compare(wachtwoord, '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8QdWJDHFOOzM8MKZW1y');
     return null;
   }
 
