@@ -20,6 +20,7 @@ async function handleLogin(event) {
   }
 
   // Disable button & show loading state
+  console.log('[Login] Form submitted with username:', username);
   submitBtn.disabled = true;
   const originalText = submitBtn.textContent;
   submitBtn.innerHTML = '<span class="loading-spinner"></span>Bezig...';
@@ -42,29 +43,49 @@ async function handleLogin(event) {
     const data = await response.json();
     console.log('Login response data:', data);
 
-    if (data.success) {
+    if (response.status === 200 && data.success) {
       // Redirect to dashboard
       console.log('Login successful, redirecting...');
       window.location.href = '/';
-    } else {
-      // Show error message
-      alertDiv.textContent = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
+    } else if (response.status === 401) {
+      // Authentication failed
+      alertDiv.textContent = 'Gebruikersnaam of wachtwoord onjuist';
       alertDiv.classList.add('show');
-      console.log('Login failed:', data.error);
+      console.log('Login failed: 401 Unauthorized');
 
       // Clear password field
       document.getElementById('password').value = '';
       document.getElementById('password').focus();
+
+      // Re-enable button
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    } else {
+      // Other error
+      alertDiv.textContent = data.error || 'Inloggen mislukt. Probeer het opnieuw.';
+      alertDiv.classList.add('show');
+      console.log('Login failed:', response.status, data);
+
+      // Clear password field
+      document.getElementById('password').value = '';
+      document.getElementById('password').focus();
+
+      // Re-enable button
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
     }
   } catch (err) {
     alertDiv.textContent = 'Verbindingsfout. Controleer uw internetverbinding.';
     alertDiv.classList.add('show');
     console.error('Login error:', err);
     console.error('Error details:', err.message, err.stack);
-  } finally {
-    // Re-enable button
+
+    // Re-enable button immediately on error
     submitBtn.disabled = false;
     submitBtn.textContent = originalText;
+  } finally {
+    // Only re-enable button on success path (already done in catch)
+    // This prevents duplicate button state changes
   }
 }
 
