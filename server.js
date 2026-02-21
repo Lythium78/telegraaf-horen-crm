@@ -95,10 +95,14 @@ if (!fs.existsSync(path.join(__dirname, 'logs'))) {
   fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
 }
 
+// Sessies opslaan in /data (persistent volume) of app-map
+const sessiesDir = process.env.DATA_DIR || path.dirname(process.env.DB_PATH || __dirname + '/dummy');
+const sessiesDirFinal = fs.existsSync(sessiesDir) ? sessiesDir : __dirname;
+
 app.use(session({
   store: new SQLiteStore({
     db: 'sessies.db',
-    dir: __dirname,
+    dir: sessiesDirFinal,
     table: 'sessies'
   }),
   secret: process.env.SESSION_SECRET || (() => {
@@ -171,12 +175,11 @@ app.get('/login', (req, res) => {
 });
 
 // Serve login.js OPENBAAR (niet beveiligd, nodig VOOR inlog)
-app.use('/login.js', express.static(path.join(__dirname, 'public', 'login.js'), {
-  setHeaders: (res) => {
-    res.set('Content-Type', 'application/javascript');
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  }
-}));
+app.get('/login.js', (req, res) => {
+  res.set('Content-Type', 'application/javascript');
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'login.js'));
+});
 
 // ============================================================
 // 9. EERSTE ADMIN SETUP (alleen als er GEEN gebruikers zijn)
