@@ -51,12 +51,15 @@ const toegestaneOrigins = IS_PRODUCTIE
 
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin && IS_PRODUCTIE) {
-      return callback(new Error('Geen origin header'));
-    }
-    if (!origin || toegestaneOrigins.includes(origin)) {
+    // Geen origin = verzoek van dezelfde server/browser, altijd toestaan
+    if (!origin) {
       return callback(null, true);
     }
+    // Check of origin in whitelist staat
+    if (toegestaneOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // Externe origin niet in whitelist
     return callback(new Error('CORS geblokkeerd'));
   },
   credentials: true,
