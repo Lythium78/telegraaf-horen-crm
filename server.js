@@ -140,7 +140,7 @@ app.set('trust proxy', 1);
 })();
 
 // ============================================================
-// 8. STATISCHE BESTANDEN (login openbaar)
+// 8. STATISCHE BESTANDEN (login openbaar, VOOR authenticatie)
 // ============================================================
 app.get('/login', (req, res) => {
   if (req.session && req.session.gebruiker) {
@@ -148,6 +148,14 @@ app.get('/login', (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+
+// Serve login.js OPENBAAR (niet beveiligd, nodig VOOR inlog)
+app.use('/login.js', express.static(path.join(__dirname, 'public', 'login.js'), {
+  setHeaders: (res) => {
+    res.set('Content-Type', 'application/javascript');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 
 // ============================================================
 // 9. AUTHENTICATIE ROUTES
