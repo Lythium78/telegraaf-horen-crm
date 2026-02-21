@@ -95,16 +95,10 @@ if (!fs.existsSync(path.join(__dirname, 'logs'))) {
   fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
 }
 
-// Sessies opslaan in /data (persistent volume) of app-map
-const sessiesDir = process.env.DATA_DIR || path.dirname(process.env.DB_PATH || __dirname + '/dummy');
-const sessiesDirFinal = fs.existsSync(sessiesDir) ? sessiesDir : __dirname;
+// DEBUG: Tijdelijk in-memory sessies (geen connect-sqlite3) om probleem te isoleren
+console.log('[DEBUG] Sessies: in-memory store (debug mode)');
 
 app.use(session({
-  store: new SQLiteStore({
-    db: 'sessies.db',
-    dir: sessiesDirFinal,
-    table: 'sessies'
-  }),
   secret: process.env.SESSION_SECRET || (() => {
     throw new Error('SESSION_SECRET niet ingesteld in .env!');
   })(),
