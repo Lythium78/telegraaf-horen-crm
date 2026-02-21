@@ -158,7 +158,41 @@ app.use('/login.js', express.static(path.join(__dirname, 'public', 'login.js'), 
 }));
 
 // ============================================================
-// 9. AUTHENTICATIE ROUTES
+// 9. EERSTE ADMIN SETUP (alleen als er GEEN gebruikers zijn)
+// ============================================================
+app.post('/setup-eerste-admin', async (req, res) => {
+  try {
+    // Controleer of er al gebruikers zijn
+    const gebruikers = database.getAllGebruikers();
+    if (gebruikers && gebruikers.length > 0) {
+      return res.status(403).json({ success: false, error: 'Setup al gedaan - er zijn al gebruikers' });
+    }
+
+    // Geheime setup token check (staat in omgevingsvariabele)
+    const setupToken = req.headers['x-setup-token'];
+    if (!setupToken || setupToken !== process.env.SETUP_TOKEN) {
+      return res.status(401).json({ success: false, error: 'Ongeldige setup token' });
+    }
+
+    const { naam, gebruikersnaam, wachtwoord } = req.body;
+    if (!naam || !gebruikersnaam || !wachtwoord || wachtwoord.length < 8) {
+      return res.status(400).json({ success: false, error: 'Naam, gebruikersnaam en wachtwoord (min 8 tekens) verplicht' });
+    }
+
+    const { hashWachtwoord } = require('./auth');
+    const hash = await hashWachtwoord(wachtwoord);
+    database.createGebruiker(naam, gebruikersnaam, hash, 'admin');
+
+    console.log(`[SETUP] Eerste admin aangemaakt: ${gebruikersnaam}`);
+    res.json({ success: true, message: `Admin '${gebruikersnaam}' aangemaakt! Je kunt nu inloggen.` });
+  } catch (err) {
+    console.error('[SETUP] Error:', err);
+    res.status(500).json({ success: false, error: 'Fout bij aanmaken admin' });
+  }
+});
+
+// ============================================================
+// 10. AUTHENTICATIE ROUTES
 // ============================================================
 
 app.post('/login', async (req, res) => {
