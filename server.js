@@ -28,12 +28,13 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://static.imgly.com"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
-      frameSrc: ["'none'"]
+      frameSrc: ["'none'"],
+      workerSrc: ["'self'", "blob:"]
     }
   },
   hsts: {
@@ -282,6 +283,10 @@ app.get('/logout', (req, res) => {
 
 app.get('/', vereistInlog, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/foto-editor', vereistInlog, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'photo-editor.html'));
 });
 
 app.use('/', vereistInlog, express.static(path.join(__dirname, 'public'), {

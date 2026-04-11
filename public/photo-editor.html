@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Foto Editor — Telegraaf Horen</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* ── Layout ── */
+    .pe-page { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .pe-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .pe-header a { color: var(--kleur-teal); text-decoration: none; font-size: 1.4rem; line-height: 1; }
+    .pe-header h1 { font-size: 1.2rem; color: var(--kleur-donkerblauw); margin: 0; }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--kleur-rand);
+      border-radius: var(--radius);
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--kleur-wit);
+      transition: border-color .2s, background .2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--kleur-teal);
+      background: #f0fafb;
+    }
+    .upload-zone .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone p { color: var(--kleur-tekst-licht); margin: 4px 0; font-size: .9rem; }
+    .upload-zone strong { color: var(--kleur-donkerblauw); font-size: 1rem; }
+    #bestandInput { display: none; }
+
+    /* ── Canvas wrapper ── */
+    .canvas-wrapper {
+      display: none;
+      position: relative;
+      background: repeating-conic-gradient(#e0e0e0 0% 25%, #f8f8f8 0% 50%) 0 0 / 16px 16px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+      touch-action: none;
+    }
+    #resultCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+    }
+
+    /* ── Progress ── */
+    .progress-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(18,36,62,.75);
+      border-radius: var(--radius);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: #fff;
+    }
+    .progress-overlay.actief { display: flex; }
+    .voortgang-bar {
+      width: 70%;
+      height: 6px;
+      background: rgba(255,255,255,.25);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .voortgang-fill {
+      height: 100%;
+      background: var(--kleur-teal);
+      border-radius: 3px;
+      transition: width .3s;
+      width: 0%;
+    }
+    .progress-tekst { font-size: .85rem; opacity: .9; }
+
+    /* ── Section card ── */
+    .sectie {
+      background: var(--kleur-wit);
+      border: 1px solid var(--kleur-rand);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .sectie h3 {
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--kleur-tekst-licht);
+      margin-bottom: 12px;
+    }
+
+    /* ── Pill selector ── */
+    .keuze-rij { display: flex; flex-wrap: wrap; gap: 8px; }
+    .keuze-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--kleur-rand);
+      background: #fff;
+      font-size: .85rem;
+      cursor: pointer;
+      color: var(--kleur-tekst);
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .keuze-pill:hover { border-color: var(--kleur-teal); color: var(--kleur-teal); }
+    .keuze-pill.actief {
+      background: var(--kleur-teal);
+      border-color: var(--kleur-teal);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ── Color swatches ── */
+    .kleur-rij { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .kleur-swatch {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2.5px solid transparent;
+      transition: transform .15s, border-color .15s;
+      flex-shrink: 0;
+    }
+    .kleur-swatch:hover { transform: scale(1.12); }
+    .kleur-swatch.actief { border-color: var(--kleur-teal); transform: scale(1.12); }
+    .kleur-transparant {
+      background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+    }
+    .kleur-custom-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .82rem; color: var(--kleur-tekst-licht); cursor: pointer;
+    }
+    #kleurKiezer { width: 36px; height: 36px; border: none; padding: 0; cursor: pointer; border-radius: 50%; }
+
+    /* ── Shadow slider ── */
+    .schuif-rij { display: flex; align-items: center; gap: 10px; }
+    .schuif-rij input[type=range] { flex: 1; accent-color: var(--kleur-teal); }
+    .schuif-waarde {
+      min-width: 36px; text-align: right;
+      font-size: .85rem; color: var(--kleur-tekst-licht);
+    }
+
+    /* ── Badge grid ── */
+    .badge-rij { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge-knop {
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1.5px solid var(--kleur-rand);
+      background: #fff;
+      font-size: .82rem;
+      cursor: pointer;
+      color: var(--kleur-tekst);
+      transition: all .15s;
+    }
+    .badge-knop:hover { border-color: var(--kleur-teal); }
+    .badge-knop.actief {
+      border-color: var(--kleur-donkerblauw);
+      background: var(--kleur-donkerblauw);
+      color: #fff;
+    }
+
+    /* ── Position selector ── */
+    .positie-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      width: 96px; margin-top: 10px;
+    }
+    .positie-cel {
+      width: 28px; height: 28px;
+      border-radius: 4px;
+      border: 1.5px solid var(--kleur-rand);
+      cursor: pointer;
+      background: #fff;
+      transition: background .15s;
+    }
+    .positie-cel:hover { background: #e8f7fa; }
+    .positie-cel.actief { background: var(--kleur-teal); border-color: var(--kleur-teal); }
+
+    /* ── Action buttons ── */
+    .actie-rij { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+    .btn-primair {
+      flex: 1; min-width: 140px;
+      background: var(--kleur-teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background .2s;
+    }
+    .btn-primair:hover { background: var(--kleur-teal-donker); }
+    .btn-primair:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-secundair {
+      flex: 1; min-width: 120px;
+      background: #fff;
+      color: var(--kleur-donkerblauw);
+      border: 1.5px solid var(--kleur-rand);
+      border-radius: var(--radius);
+      padding: 13px 18px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: border-color .2s;
+    }
+    .btn-secundair:hover { border-color: var(--kleur-teal); color: var(--kleur-teal); }
+
+    /* ── Hidden edit panel ── */
+    #editPanel { display: none; }
+    #editPanel.zichtbaar { display: block; }
+
+    /* ── Nieuw foto knop ── */
+    #nieuwFotoKnop { display: none; }
+
+    /* ── Logo toggle ── */
+    .logo-rij { display: flex; align-items: center; gap: 12px; }
+    .schakelaar {
+      position: relative; display: inline-block;
+      width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .schakelaar input { display: none; }
+    .schakelaar-slider {
+      position: absolute; inset: 0;
+      background: #ccc; border-radius: 12px; cursor: pointer;
+      transition: background .2s;
+    }
+    .schakelaar-slider::after {
+      content: '';
+      position: absolute; top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      background: #fff; border-radius: 50%;
+      transition: transform .2s;
+    }
+    .schakelaar input:checked + .schakelaar-slider { background: var(--kleur-teal); }
+    .schakelaar input:checked + .schakelaar-slider::after { transform: translateX(20px); }
+    .schakelaar-label { font-size: .9rem; color: var(--kleur-tekst); }
+  </style>
+</head>
+<body>
+<div class="pe-page">
+
+  <!-- Header -->
+  <div class="pe-header">
+    <a href="/" title="Terug naar dashboard">&#8592;</a>
+    <h1>Product Foto Editor</h1>
+  </div>
+
+  <!-- Upload zone (hidden after upload) -->
+  <div id="uploadZone" class="upload-zone" role="button" tabindex="0" aria-label="Foto uploaden">
+    <div class="upload-icon">📷</div>
+    <strong>Foto selecteren</strong>
+    <p>Maak een foto of kies uit bibliotheek</p>
+    <p style="margin-top:8px;font-size:.78rem;">JPG · PNG · HEIC — max 20 MB</p>
+    <input type="file" id="bestandInput" accept="image/*" capture="environment">
+  </div>
+
+  <!-- Canvas + progress overlay -->
+  <div id="canvasWrapper" class="canvas-wrapper">
+    <canvas id="resultCanvas"></canvas>
+    <div id="progressOverlay" class="progress-overlay">
+      <div class="progress-tekst" id="progressTekst">Achtergrond verwijderen…</div>
+      <div class="voortgang-bar"><div class="voortgang-fill" id="voortgangFill"></div></div>
+    </div>
+  </div>
+
+  <!-- Nieuw foto knop -->
+  <button id="nieuwFotoKnop" class="btn-secundair" style="width:100%;margin-bottom:12px;">
+    &#8635; Nieuwe foto
+  </button>
+
+  <!-- Edit panel (shown after bg removal) -->
+  <div id="editPanel">
+
+    <!-- Achtergrond -->
+    <div class="sectie">
+      <h3>Achtergrond</h3>
+      <div class="kleur-rij">
+        <div class="kleur-swatch kleur-transparant actief" data-kleur="transparent" title="Transparant"></div>
+        <div class="kleur-swatch" style="background:#ffffff;border:1.5px solid #dde3ec;" data-kleur="#ffffff" title="Wit"></div>
+        <div class="kleur-swatch" style="background:#f5f5f5;" data-kleur="#f5f5f5" title="Lichtgrijs"></div>
+        <div class="kleur-swatch" style="background:#12243E;" data-kleur="#12243E" title="Donkerblauw"></div>
+        <div class="kleur-swatch" style="background:#3AA6B9;" data-kleur="#3AA6B9" title="Teal"></div>
+        <div class="kleur-swatch" style="background:#D1B18A;" data-kleur="#D1B18A" title="Goud/Beige"></div>
+        <div class="kleur-swatch" style="background:linear-gradient(135deg,#12243E,#3AA6B9);" data-kleur="gradient-blauw-teal" title="Gradient blauw-teal"></div>
+        <div class="kleur-swatch" style="background:linear-gradient(135deg,#f0f4f8,#dde3ec);" data-kleur="gradient-grijs" title="Gradient grijs"></div>
+        <label class="kleur-custom-label">
+          <input type="color" id="kleurKiezer" value="#e8f0fe" title="Eigen kleur">
+          <span>Eigen</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Schaduw -->
+    <div class="sectie">
+      <h3>Schaduw</h3>
+      <div class="keuze-rij" id="schaduwKeuze">
+        <button class="keuze-pill actief" data-schaduw="geen">Geen</button>
+        <button class="keuze-pill" data-schaduw="zacht">Zacht</button>
+        <button class="keuze-pill" data-schaduw="hard">Hard</button>
+        <button class="keuze-pill" data-schaduw="zwevend">Zwevend</button>
+      </div>
+      <div id="schaduwOpties" style="margin-top:12px;display:none;">
+        <div class="schuif-rij">
+          <span style="font-size:.82rem;color:var(--kleur-tekst-licht);min-width:60px;">Intensiteit</span>
+          <input type="range" id="schaduwIntensiteit" min="10" max="80" value="35">
+          <span class="schuif-waarde" id="intensiteitWaarde">35%</span>
+        </div>
+        <div class="schuif-rij" style="margin-top:8px;">
+          <span style="font-size:.82rem;color:var(--kleur-tekst-licht);min-width:60px;">Vervaging</span>
+          <input type="range" id="schaduwVervaging" min="5" max="60" value="20">
+          <span class="schuif-waarde" id="vervagingWaarde">20px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badge / label -->
+    <div class="sectie">
+      <h3>Badge</h3>
+      <div class="badge-rij" id="badgeKeuze">
+        <button class="badge-knop actief" data-badge="geen">Geen</button>
+        <button class="badge-knop" data-badge="nieuw" style="background:#27AE60;color:#fff;border-color:#27AE60;">✦ Nieuw</button>
+        <button class="badge-knop" data-badge="aanbieding" style="background:#e74c3c;color:#fff;border-color:#e74c3c;">🏷 Aanbieding</button>
+        <button class="badge-knop" data-badge="bestseller" style="background:#E8961A;color:#fff;border-color:#E8961A;">★ Bestseller</button>
+        <button class="badge-knop" data-badge="tip" style="background:#3AA6B9;color:#fff;border-color:#3AA6B9;">💡 Tip</button>
+      </div>
+      <div id="badgePlaatsing" style="display:none;margin-top:10px;">
+        <span style="font-size:.82rem;color:var(--kleur-tekst-licht);">Positie</span>
+        <div class="positie-grid" id="positieGrid">
+          <div class="positie-cel" data-pos="links-boven"></div>
+          <div class="positie-cel" data-pos="midden-boven"></div>
+          <div class="positie-cel actief" data-pos="rechts-boven"></div>
+          <div class="positie-cel" data-pos="links-midden"></div>
+          <div class="positie-cel" data-pos="midden"></div>
+          <div class="positie-cel" data-pos="rechts-midden"></div>
+          <div class="positie-cel" data-pos="links-onder"></div>
+          <div class="positie-cel" data-pos="midden-onder"></div>
+          <div class="positie-cel" data-pos="rechts-onder"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="sectie">
+      <h3>Telegraaf Horen logo</h3>
+      <div class="logo-rij">
+        <label class="schakelaar">
+          <input type="checkbox" id="logoToggle">
+          <span class="schakelaar-slider"></span>
+        </label>
+        <span class="schakelaar-label">Logo toevoegen</span>
+      </div>
+      <div id="logoPlaatsing" style="display:none;margin-top:10px;">
+        <span style="font-size:.82rem;color:var(--kleur-tekst-licht);">Positie</span>
+        <div class="positie-grid" id="logoPlaatsingGrid">
+          <div class="positie-cel" data-lpos="links-boven"></div>
+          <div class="positie-cel" data-lpos="midden-boven"></div>
+          <div class="positie-cel" data-lpos="rechts-boven"></div>
+          <div class="positie-cel" data-lpos="links-midden"></div>
+          <div class="positie-cel" data-lpos="midden"></div>
+          <div class="positie-cel" data-lpos="rechts-midden"></div>
+          <div class="positie-cel actief" data-lpos="links-onder"></div>
+          <div class="positie-cel" data-lpos="midden-onder"></div>
+          <div class="positie-cel" data-lpos="rechts-onder"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exporteren -->
+    <div class="actie-rij">
+      <button id="downloadPNG" class="btn-primair">
+        &#8659; PNG downloaden
+      </button>
+      <button id="downloadJPG" class="btn-secundair">
+        &#8659; JPG downloaden
+      </button>
+    </div>
+
+  </div><!-- /editPanel -->
+
+</div><!-- /pe-page -->
+
+<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/background-removal.js"></script>
+<script src="/photo-editor.js"></script>
+</body>
+</html>
