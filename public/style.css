@@ -1324,10 +1324,11 @@ html, body {
 }
 
 /* ============================================================
-   Responsive — mobiel (max 640px)
+   Responsive — mobiel (portrait ≤640px, landscape telefoon ≤500px hoog)
    Sidebar wordt hamburger slide-in menu
    ============================================================ */
-@media (max-width: 640px) {
+@media (max-width: 640px),
+       (max-height: 500px) and (orientation: landscape) {
 
   /* === Layout === */
   .app-layout {
@@ -1581,25 +1582,51 @@ html, body {
 }
 
 /* ============================================================
-   Landscape-modus fix — geen zijdelingse scroll
+   Landscape-modus specifieke overrides (telefoon liggend)
    ============================================================ */
-@media (max-height: 480px) and (orientation: landscape) {
-  .modal-content {
-    max-height: 92svh;
-    max-height: 92dvh;
-    max-height: 92vh;
-    border-radius: 12px;
-    margin: 4vh auto;
-    width: calc(100% - 2rem);
-    max-width: 640px;
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Compact header om verticale ruimte te besparen */
+  .mobiel-header {
+    height: 44px;
+    min-height: 44px;
   }
 
-  .modal { align-items: center; }
-
+  /* Minder padding in main area */
   .main-area {
+    padding: 0.5rem 0.75rem 1rem;
     overflow-x: hidden;
     overflow-y: auto;
   }
+
+  /* Modal als gecentreerde dialog ipv bottom sheet */
+  .modal {
+    align-items: center;
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    border-radius: 12px;
+    margin: 0 auto;
+    width: calc(100% - 1rem);
+    max-width: 600px;
+    max-height: 88svh;
+    max-height: 88dvh;
+    max-height: 88vh;
+  }
+
+  .modal-content-groot {
+    max-height: 94svh;
+    max-height: 94dvh;
+    max-height: 94vh;
+  }
+
+  /* Section header compacter */
+  .section-header {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .section-header h1 { font-size: 1.1rem; }
 }
 
 /* ============================================================
