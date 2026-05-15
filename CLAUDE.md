@@ -6,408 +6,226 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Telegraaf Horen CRM v2.0** — A secure, multi-user Customer Relationship Management system for managing contacts and business relationships. Built with Node.js + Express + SQLite, running on Railway.app cloud (€5/maand).
+**Telegraaf Horen CRM v2.0** — Multi-user CRM for a Dutch hearing aid retailer. Node.js + Express + SQLite, deployed on Railway.app (€5/maand). Phase 2 complete: all core modules live.
 
-**Key fact:** This is a **security-first implementation** (Phase 1 complete). All routes require authentication, audit logging is mandatory, and sensitive data is protected.
+**Status:** Production on Railway. Admin panel, search, leads pipeline, hoortoestellen, taken, bestellingen, nazorg, foto editor — all built and deployed.
 
 ---
 
 ## Architecture & Stack
 
-### Backend
-- **Framework:** Express.js (Node.js)
-- **Database:** SQLite via sql.js (in-memory with file persistence)
-- **Authentication:** Sessions + bcryptjs password hashing
-- **Security:** Helmet, CORS (restricted), Rate limiting
-- **Logging:** Winston (audit logs, error logs — NO PII in logs)
-- **Port:** 3001 (development), Railway dynamic (production)
+- **Backend:** Express.js, sql.js (SQLite in-memory + file), bcryptjs sessions, Helmet/CORS/rate limiting, Winston logging
+- **Frontend:** Vanilla HTML/CSS/JS — no framework. CSP-compliant (no inline handlers).
+- **Branding:** donkerblauw `#12243E`, teal `#3AA6B9`, beige `#D1B18A`
+- **Language convention:** Dutch UI + domain terms, English code + config
+- **Deploy:** `git push origin main` → Railway auto-deploys. DB persisted on `/data` volume.
 
-### Frontend
-- **Tech:** Vanilla HTML/CSS/JavaScript (no framework)
-- **Branding:** Telegraaf Horen huisstijl (donkerblauw #12243E, teal #3AA6B9, beige #D1B18A)
-- **Languages:** Dutch (UI + domain terms), English (technical)
+---
 
-### Database Schema (Phase 1)
+## Running the Server
 
-Three core tables:
+```bash
+# Requires .env (see .env.template)
+npm start
+
+# Start without .env (testing only — sessions lost on restart)
+SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(64).toString('hex'))") \
+NODE_ENV=development PORT=3001 DB_PATH=/tmp/crm.db node server.js
+```
+
+---
+
+## Database Schema
+
+Eight tables. All schema changes use the `tableNames.includes()` pattern in `initDatabase()` — no separate migration runner.
 
 ```
-contacts:
-  - id (PK), naam, email, telefoonnummer, bedrijf
-  - type (klant/prospect/partner), status, notities
-  - aangemaakt_op, bijgewerkt_op (timestamps)
+contacts          — klanten (id, naam, email, telefoonnummer, mobiel, bedrijf,
+                    type, status, notities, aanhef, geboortedatum, adres,
+                    postcode, woonplaats, huisarts, voorschrijver,
+                    klantnummer_extern, aangemaakt_op, bijgewerkt_op)
 
-gebruikers:
-  - id (PK), naam, gebruikersnaam (UNIQUE), wachtwoord_hash
-  - rol (admin/medewerker/viewer), actief, laatste_login
-  - aangemaakt_op
+gebruikers        — id, naam, gebruikersnaam (UNIQUE), wachtwoord_hash,
+                    rol (admin|medewerker|viewer), actief, laatste_login
 
-audit_log:
-  - id, gebruiker_id (FK), actie, resource_type, resource_id
-  - ip_adres, tijdstip
-  - PURPOSE: Track all mutations (WHO, WHAT, WHEN) — NO data content
+audit_log         — id, gebruiker_id (FK), actie, resource_type, resource_id,
+                    ip_adres, tijdstip  ← NO data content, only IDs + actions
+
+leads             — pipeline: lead→gekwalificeerd→intake_gepland→klant→inactief
+                    herkomst: telefoon|verwijzing|website|inloop
+
+hoortoestellen    — contact_id (FK), merk, type_naam, serienummer_links/rechts,
+                    kleur, leverdatum, factuurdatum
+
+taken             — titel, deadline, status (open|in_uitvoering|afgerond),
+                    contact_id/lead_id (FK), eigenaar, aangemaakt_door
+
+contact_notities  — contact_id or lead_id (FK), medewerker, tekst
+
+bestellingen      — contact_id (FK), bezorgmethode (afhalen|verzenden),
+                    status (besteld|klaar|geleverd)
+bestelling_regels — bestelling_id (FK), artikel_naam, artikel_type, hoeveelheid
 ```
+
+Adding a column to an existing table: add to the `extraKolommen` array in `initDatabase()`.
 
 ---
 
 ## Module Structure
 
-### Core Modules
+**`server.js`** (1285 lines) — All routes. Sections separated by `// ====` comments.
+- Middleware order: Helmet → CORS → rate limit → session → body parser → trust proxy → DB init → static → routes → error handlers
+- Every route follows: `vereistInlog` → optionally `vereistRol(rol)` → business logic → `auditLog()` → response
 
-**`server.js`** (370 lines)
-- Express app initialization with 13 middleware layers
-- Security: Helmet, CORS, rate limiting, session management
-- 3 routes: `/login` (POST), `/logout` (GET), `/api/*` (protected)
-- 5 API endpoints: health, mij, contacts (CRUD)
-- Error handlers: Generic errors (no internal details leak), 404 handler
+**`database.js`** (1423 lines) — All DB functions grouped by domain.
+- Pattern: `db.prepare(sql)` → `stmt.bind([...])` → `stmt.step()` → `stmt.getAsObject()` → `stmt.free()` → `saveDatabase()`
+- **`saveDatabase()` must be called after every write.** sql.js is in-memory; without this, changes are lost on restart.
+- `logAudit()` here is separate from `logger.js`'s `auditLog()` — server.js only uses the logger version.
 
 **`auth.js`** (65 lines)
-- `vereistInlog` middleware — checks session existence
-- `vereistRol(minimaleRol)` middleware — role-based access (viewer < medewerker < admin)
-- `verificeerInlog()` — bcryptjs comparison with timing-attack mitigation
-- `hashWachtwoord()` — bcryptjs.hash(pw, 12) for new users
-
-**`database.js`** (320 lines)
-- Uses sql.js (SQLite in-memory + file persistence)
-- Pattern: `db.prepare()` → `stmt.bind()` → `stmt.step()` → `stmt.getAsObject()`
-- **CRITICAL:** Always call `saveDatabase()` after writes
-- Contact functions: CRUD + getAllContacts (no pagination yet)
-- User functions: getGebruikerByNaam, getAllGebruikers, createGebruiker, updateLaatsteLogin
-- Audit function: logAudit(userId, actie, resourceType, resourceId, ipAdres)
+- `vereistInlog` — session guard middleware
+- `vereistRol(minimaleRol)` — role hierarchy: viewer < medewerker < admin
+- `verificeerInlog()` / `hashWachtwoord()` — bcryptjs 12 rounds (never reduce)
 
 **`logger.js`** (65 lines)
-- Winston transport setup (audit.log, error.log)
-- `auditLog(actie, gebruikersnaam, resourceId, extra)` — signature in this exact order
-- `logError()` — for debugging (stack traces are safe)
-- ⚠️ `database.js` has a separate `logAudit()` — these are two independent systems. `server.js` uses only `logger.js`'s `auditLog()`
+- `auditLog(actie, gebruikersnaam, resourceId, extra)` — Winston to `audit.log`
+- Signature order matters. `extra` is an object (e.g. `{ ip: req.ip }`).
 
-**`create-admin.js`** (50 lines)
-- CLI tool: `node create-admin.js "Naam" "username" "password"`
-- Auto-called via `npm run create:admin`
-- Validates: min 8-char password, unique username
-- Hashes password + inserts into gebruikers table
+**`public/app.js`** (1758 lines) — Single-page frontend logic.
+- Global state: `contacts`, `leads`, `taken`, `bestellingen`, `currentUser`
+- `init()` → `laadHuidigeGebruiker()` → show/hide admin nav → load dashboard
+- `schakelSectie(naam)` switches sections and loads data for each
+- `escapeHtml()` used everywhere before inserting user data into DOM
 
-**`public/login.html`** (220 lines)
-- Telegraaf Horen branded login form
-- Async fetch to `/login` endpoint via `public/login.js`
-- Shows error on failed auth (vague message, no user enumeration)
-- ⚠️ CSP: NO inline event handlers allowed (`onsubmit`, `onclick` etc. are blocked by Helmet's `script-src-attr: 'none'`). All event listeners must be in `login.js` via `addEventListener`
-
-**`public/login.js`** (110 lines)
-- Handles login form submission via `addEventListener('submit', handleLogin)`
-- Manages loading state, error display, and redirect on success
-
-### Configuration Files
-
-**`.env`** (required, NOT in git)
-```
-NODE_ENV=development|production
-PORT=3001
-SESSION_SECRET=[64-char random, generated once]
-TOEGESTAAN_ORIGIN=http://localhost:3001|https://app.railway.app
-DB_PATH=./crm.db
-LOG_DIR=./logs
-# Auto-admin bij lege database (exact deze namen — server.js leest ADMIN_NAAM + ADMIN_GEBRUIKER + ADMIN_WACHTWOORD):
-ADMIN_NAAM=Mield
-ADMIN_GEBRUIKER=mield
-ADMIN_WACHTWOORD=SterkWachtwoord123!
-```
-
-**`.env.template`** (for distribution)
-- Same structure as `.env` but with placeholder values
-- Included in git for setup reference
-
-**`railway.json`** (deployment config)
-- Minimal config for Railway.app NIXPACKS builder
-- startCommand: `node server.js`
-- Auto-detects PORT from Railway environment
+**`public/style.css`** (1558 lines)
+- Mobile breakpoint at `≤640px`: sidebar becomes fixed bottom nav bar
+- At `≤1024px`: sidebar collapses to icon-only strip
 
 ---
 
-## Common Development Tasks
+## API Surface
 
-### Run Server
-```bash
-npm start              # Production-like, requires .env
-npm run dev          # Same (alias)
+All `/api/*` routes require `vereistInlog`. Role shown where restricted.
+
+```
+GET    /api/health
+GET    /api/mij
+GET    /api/stats                                  — dashboard counts
+
+GET    /api/contacts                               — ?zoek= searches naam/email/bedrijf/tel/mobiel/woonplaats/klantnummer
+GET    /api/contacts/:id
+POST   /api/contacts                               medewerker+
+PUT    /api/contacts/:id                           medewerker+
+DELETE /api/contacts/:id                           admin
+
+GET    /api/contacts/:id/hoortoestellen
+POST   /api/contacts/:id/hoortoestellen            medewerker+
+PUT    /api/hoortoestellen/:id                     medewerker+
+DELETE /api/hoortoestellen/:id                     medewerker+
+GET    /api/nazorg/aankomend                       — ?dagen= (default 60); ±30d around 1yr/5yr anniversaries
+
+GET    /api/contacts/:id/notities
+POST   /api/contacts/:id/notities                  medewerker+
+GET    /api/leads/:id/notities
+POST   /api/leads/:id/notities                     medewerker+
+DELETE /api/notities/:id                           medewerker+
+
+GET    /api/contacts/:id/bestellingen
+POST   /api/contacts/:id/bestellingen              medewerker+  (with regels array)
+GET    /api/bestellingen                           — ?status= filter
+PUT    /api/bestellingen/:id                       medewerker+
+DELETE /api/bestellingen/:id                       admin
+
+GET    /api/leads                                  — ?herkomst= ?status= filters
+GET    /api/leads/:id
+POST   /api/leads                                  medewerker+
+PUT    /api/leads/:id                              medewerker+
+DELETE /api/leads/:id                              admin
+
+GET    /api/taken                                  — ?status= ?eigenaar= ?contact_id= ?lead_id=
+GET    /api/taken/:id
+POST   /api/taken                                  medewerker+
+PUT    /api/taken/:id                              medewerker+
+DELETE /api/taken/:id
+
+GET    /api/gebruikers                             admin
+POST   /api/gebruikers                             admin  (naam, gebruikersnaam, wachtwoord, rol)
+PUT    /api/gebruikers/:id                         admin  (naam?, rol?, actief?)
+POST   /api/gebruikers/:id/wachtwoord              admin  (wachtwoord min 8 chars)
 ```
 
-### Create First Admin
-```bash
-npm run create:admin -- "Mield" "mield" "YourPassword123!"
-```
+---
 
-### Test Locally
-1. Ensure Intake Tracker is stopped (port 3000 conflict)
-2. Start CRM: `npm start`
-3. Navigate: `http://localhost:3001/login`
-4. Login with credentials from `create-admin`
+## Security Rules
 
-### Add New API Endpoint
-1. **Add middleware stacking** in `server.js`:
-   ```javascript
-   app.get('/api/custom', vereistInlog, vereistRol('medewerker'), (req, res) => {
-     auditLog('custom_actie', req.session.gebruiker.gebruikersnaam, resourceId, { ip: req.ip });
-     res.json({ success: true, data: ... });
-   });
-   ```
-   - ALWAYS include `vereistInlog`
-   - Add `vereistRol()` if only certain roles should access
-   - ALWAYS call `auditLog()` for mutations — signature: `(actie, gebruikersnaam, resourceId, extra)`
-   - NEVER expose error messages: catch and log, return generic error
+- **Every route needs `vereistInlog`** — no exceptions outside `/login` and `/login.js`
+- **`auditLog()` on every mutation** — signature: `(actie, gebruikersnaam, resourceId, { ip: req.ip })`
+- **Audit logs: NO PII** — only action names, IDs, IP addresses
+- **All errors generic to client** — log details internally, return `'Er is een fout opgetreden'`
+- **SQL always parameterized** — `db.prepare('... WHERE id = ?')`, never string concat
+- **Admin cannot deactivate their own account** — enforced in `PUT /api/gebruikers/:id`
+- **CSP blocks inline handlers** — all event listeners in `.js` files via `addEventListener`, never `onclick=` in HTML
 
-2. **Database functions** in `database.js`:
-   - Use parameterized queries: `db.prepare('... WHERE id = ?')`
-   - NEVER use string concatenation in SQL
-   - Always `saveDatabase()` after INSERT/UPDATE/DELETE
-   - Return early if not found (null or empty array)
+---
 
-3. **Frontend** in `public/app.js`:
-   - Fetch authenticated (cookies sent automatically with `credentials: 'include'`)
-   - Handle 401 → redirect to `/login`
-   - Show errors to user (but check audit logs for details)
+## Adding a New Feature
 
-### Database Schema Changes
-- All migrations happen in `initDatabase()` via `tableNames.includes()` checks
-- Add new table creation block in `database.js` → `initDatabase()`
-- Add export function in `module.exports` at bottom
-- Example:
-  ```javascript
-  if (!tableNames.includes('new_table')) {
-    db.run(`CREATE TABLE new_table (...)`);
-    console.log('[DB] Created new_table');
+**New API route** in `server.js`:
+```javascript
+app.post('/api/resource', vereistInlog, vereistRol('medewerker'), (req, res) => {
+  try {
+    const naam = String(req.body.naam || '').trim().substring(0, 200);
+    if (!naam) return res.status(400).json({ success: false, error: 'Naam verplicht' });
+
+    const result = database.createResource({ naam });
+    auditLog('resource_aangemaakt', req.session.gebruiker.gebruikersnaam, result.id, { ip: req.ip });
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    console.error('[API] Error:', err);
+    res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
   }
-  ```
+});
+```
 
----
-
-## Security Model (Phase 1)
-
-### Authentication Flow
-1. User visits `/login` → `login.html` form
-2. Form posts to `POST /login` with username + password
-3. Server calls `verificeerInlog()` → bcryptjs.compare (slow, timing-safe)
-4. On success: `session.regenerate()` → store user object → return JSON
-5. On failure: vague error ("username or password incorrect"), no user enumeration
-6. On access: `vereistInlog` middleware checks `req.session.gebruiker`
-
-### Authorization: Role-Based Access Control (RBAC)
-- **admin:** Full access, can CRUD contacts + manage users (future)
-- **medewerker:** Can CREATE/READ/UPDATE contacts, cannot DELETE
-- **viewer:** READ-only (for future external consultants)
-- Middleware: `vereistRol('medewerker')` checks role rank; 403 if insufficient
-
-### Audit Trail
-Every mutation logged to `audit_log` table:
-- `ingelogd` (login success)
-- `inlog_mislukt` (failed login, no username leaked)
-- `contact_bekeken` (read)
-- `contact_aangemaakt` (create)
-- `contact_bijgewerkt` (update)
-- `contact_verwijderd` (delete)
-
-**CRITICAL:** Audit logs contain ONLY IDs and actions, NEVER names/emails/data.
-
-### Defense Layers
-1. **CORS:** Only `TOEGESTAAN_ORIGIN` can call API (blocks external sites)
-2. **Rate Limiting:** Max 5 login attempts per 15 min per IP
-3. **Password Hashing:** bcryptjs 12 rounds (200ms per attempt = secure)
-4. **Session Timeout:** 8 hours inactive → auto-logout
-5. **Input Validation:** Server-side trimming, type checking (no SQL injection)
-6. **Error Handling:** No stack traces to client, logged internally
-7. **HTTPS:** Railway auto-enforces HTTPS in production
-
----
-
-## Deployment (Railway.app)
-
-### Pre-Deployment Checklist
-- [ ] Code committed to GitHub (crm-project repo)
-- [ ] `.env` NOT in git (check `.gitignore`)
-- [ ] `npm install` successful
-- [ ] Local test: login works, contacts can be CRUD'd
-- [ ] First admin created: `npm run create:admin`
-
-### Deploy Steps
-1. Push to GitHub: `git push origin main`
-2. Railway detects push → auto-deploys
-3. Set environment variables in Railway dashboard:
-   - `NODE_ENV=production`
-   - `SESSION_SECRET=[64-char]` (generate fresh: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`)
-   - `TOEGESTAAN_ORIGIN=https://[your-app].railway.app`
-   - `DB_PATH=/data/crm.db`
-   - `LOG_DIR=/data/logs`
-4. Add Volume: Mount `/data` → persists database + logs across restarts
-5. Test: `https://[your-app].railway.app/login`
-
-### Post-Deployment
-- Create admin: `railway run npm run create:admin -- "Name" "user" "pw"`
-- Check logs: `railway logs -f`
-- Invite colleagues: share URL + username
-
----
-
-## Code Patterns & Conventions
-
-### SQL Queries
+**New DB table** in `database.js` → `initDatabase()`:
 ```javascript
-// ✅ CORRECT — parameterized
-const stmt = db.prepare('SELECT * FROM contacts WHERE id = ?');
-stmt.bind([parseInt(id)]);
-
-// ❌ WRONG — string concatenation
-const stmt = db.prepare('SELECT * FROM contacts WHERE id = ' + id);
+if (!tableNames.includes('nieuwe_tabel')) {
+  db.run(`CREATE TABLE nieuwe_tabel (...)`);
+}
 ```
+Then add the function and export it in `module.exports`.
 
-### API Responses
-```javascript
-// Success
-res.json({ success: true, data: {...} });
-res.status(201).json({ success: true, data: {...} });  // Create
-
-// Error
-res.status(400).json({ success: false, error: 'User-friendly message' });
-res.status(401).json({ success: false, error: 'Niet ingelogd' });
-res.status(403).json({ success: false, error: 'Onvoldoende rechten' });
-res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
-```
-
-### Input Validation
-```javascript
-// Sanitize + validate before use
-const naam = String(naam).trim().substring(0, 200);
-const email = email ? String(email).trim().toLowerCase().substring(0, 254) : null;
-const tel = telefoonnummer
-  ? String(telefoonnummer).replace(/[^\d\s+\-()]/g, '').substring(0, 20)
-  : null;
-
-// Whitelist enum values
-const geldige_types = ['klant', 'prospect', 'partner'];
-if (!geldige_types.includes(type)) type = 'klant';
-```
-
-### Middleware Stacking
-```javascript
-// Rate limit all /api routes
-app.use('/api/', algemeenLimiet);
-
-// Login rate limit: only on POST (NOT app.use('/login') — that would also block GET page loads)
-app.post('/login', loginLimiet, async (req, res) => {...});
-
-// Protect specific route
-app.post('/api/contacts', vereistInlog, vereistRol('medewerker'), (req, res) => {...});
-                          // ^^^ check session, ^^^ check role
-```
+**New frontend section**: add nav button in `index.html`, add `<section id="section-naam">`, add `case 'naam': await laadNaam(); break;` in `schakelSectie()`.
 
 ---
 
-## Testing & Debugging
+## Gotchas
 
-### Manual Test Flow
-1. **Health check:** `GET /api/health` (no auth required in test)
-2. **Bad login:** POST `/login` with wrong password → 401
-3. **Good login:** POST `/login` with correct creds → session cookie set
-4. **Access protected:** GET `/api/contacts` → 200 (session present)
-5. **Audit log:** Check `logs/audit.log` for entries
-6. **Logout:** GET `/logout` → session destroyed, cookie cleared
-
-### Check Audit Log
-```bash
-tail -f logs/audit.log  # Real-time
-cat logs/audit.log | grep "contact_aangemaakt"  # Filter by action
-```
-
-### Database Inspection
-```bash
-# Dump all contacts (careful with PII)
-# Use database.getAllContacts() in app.js console
-
-# Check user count
-# SELECT COUNT(*) FROM gebruikers;  (via direct query in initDatabase)
-```
+- **`saveDatabase()` after every write** — sql.js is in-memory; skipping this loses data silently
+- **Two separate audit systems** — `logger.js`'s `auditLog()` (used in routes) vs `database.js`'s `logAudit()` (DB table). Don't mix them.
+- **`.env` variable names are exact** — `ADMIN_NAAM`, `ADMIN_GEBRUIKER`, `ADMIN_WACHTWOORD`. Wrong names silently skip auto-admin creation.
+- **Login rate limiter on `app.post('/login')` only** — not `app.use('/login')` (that would also block GET page loads)
+- **Sessions are in-memory in development** — lost on every server restart. Production uses SQLiteStore.
+- **CSP is stricter in Edge than Chrome** — test login form in Edge after any `login.html` changes
+- **`font-size < 16px` on inputs triggers iOS auto-zoom** — inputs use `16px !important` in mobile CSS
 
 ---
 
-## File Locations & Size Estimates
+## Claude Code Setup
 
-```
-crm-project/
-├── server.js              (370 lines) — Main Express app + routes
-├── auth.js                (65 lines)  — Authentication middleware
-├── logger.js              (65 lines)  — Audit logging
-├── database.js            (320 lines) — Database layer
-├── create-admin.js        (50 lines)  — Admin setup CLI
-├── package.json           (35 lines)  — Dependencies
-├── railway.json           (10 lines)  — Railway config
-├── .env                   — Configuration (NOT in git)
-├── .env.template          — Template for setup (in git)
-├── .gitignore             — Excludes secrets, db, logs
-├── public/
-│   ├── index.html         (200 lines) — Dashboard + contact form
-│   ├── login.html         (220 lines) — Login form (Telegraaf Horen branding)
-│   ├── app.js             (TBD)      — Frontend logic
-│   └── style.css          (TBD)      — Styling
-├── logs/                  — audit.log, error.log (created at runtime)
-├── crm.db                 — SQLite database (created at first run)
-├── sessies.db             — Session store (created at first run)
-└── CLAUDE.md              — This file
-```
+**Super-agent skill** at `.claude/skills/super-agent/SKILL.md` — invoke with `/super-agent`. Analyzes project context and asks clarifying questions before implementing. Enforces a demo/test phase before every commit.
+
+**Session-start hook** at `.claude/hooks/session-start.sh` — automatically installs skills and runs `npm install` at the start of each cloud session.
 
 ---
 
-## Gotchas & Warnings
+## What's Still Planned
 
-### 🚨 NEVER
-- **Commit `.env`** — Contains SESSION_SECRET, credentials
-- **Log PII** — auditLog() must ONLY have actie, user ID, resource ID
-- **Expose errors** — catch and return generic "fout opgetreden" message
-- **Trust client data** — Always validate/sanitize server-side
-- **Use string concat in SQL** — Always parameterized queries
-- **Skip `saveDatabase()`** — After every write, call it
-- **Skip `vereistInlog`** — All routes (except /login) need auth check
-
-### ⚠️ Watch Out
-- **Port 3001 conflict** — Intake Tracker may be running, change PORT or kill old process
-- **SQLite concurrency** — sql.js locks entire DB during write (acceptable for this scale)
-- **Session timeout** — 8 hours, auto-logout may surprise users
-- **Rate limiting** — Legitimate users get blocked after 5 failed logins for 15 min; limiter is on `app.post('/login')` only — NOT `app.use('/login')`
-- **bcryptjs is slow** — By design (200ms per hash), DO NOT reduce rounds below 12
-- **CSP blocks inline handlers** — Helmet sets `script-src-attr: 'none'`. Never add `onsubmit`, `onclick` etc. directly in HTML. All handlers must be in `.js` files using `addEventListener`
-- **Edge vs Chrome** — Edge enforces CSP more strictly than Chrome. Test login in Edge after any login.html changes
-- **`.env` variable names** — `server.js` reads `ADMIN_NAAM`, `ADMIN_GEBRUIKER`, `ADMIN_WACHTWOORD`. Using wrong names (e.g. `ADMIN_GEBRUIKERSNAAM`) silently skips auto-admin creation
-- **Sessions in development** — In-memory store (development); SQLiteStore only in production. Sessions lost on every server restart during dev
-
-### 📌 Remember
-- **Phase 1 = Security baseline** — Features (search, dashboard) come in Phase 2
-- **Dutch-first UI** — domain terms (klant, gehoortest, etc.) stay Dutch
-- **Production-ready from day 1** — Code assumes Railway deployment + real users
-- **Audit = accountability** — Every action is logged for compliance (AVG)
+- **CSV bulk import** — import existing customer data from Excel/other systems
+- **Contact timeline** — full history of changes per contact (who changed what, when)
+- **Intake Tracker koppeling** — data sharing with separate Intake Tracker system (not yet available)
+- **2FA** — enhanced authentication
 
 ---
 
-## Next Steps (Phase 2+)
-
-Not in Phase 1, but planned:
-
-- **Search & filter:** Contact lookup by name, email, phone, company
-- **Dashboard:** Stats (new contacts this week, pending follow-ups)
-- **Bulk import:** CSV or PDF batch upload
-- **Bedrijven module:** Company management (separate table)
-- **Contact timeline:** History of changes, notes, activities
-- **Intake Tracker integration:** Share customer data between CRM and Intake system
-- **2FA/passwordless:** Enhanced auth methods
-- **Admin panel:** UI for user management (currently CLI only)
-
----
-
-## References
-
-- **README.md** — User-facing documentation (setup, API endpoints)
-- **RAILWAY-SETUP.md** — Deployment guide (in crm-project root)
-- **DEPLOYMENT-CHECKLIST.md** — Verification checklist
-- **CRM-IMPLEMENTATION-PLAN.md** — High-level plan + sparring topics (in memory/)
-- **Memory file:** `~/.claude/.../MEMORY.md` — Project context (Intake Tracker, backup system, etc.)
-
----
-
-**Last Updated:** Feb 21, 2026 | Phase: 1 (Security Foundation) | Status: Lokaal LIVE — Railway deployment gepland
+**Last Updated:** May 2026 | Phase: 2 (Core Features) | Status: Live op Railway
