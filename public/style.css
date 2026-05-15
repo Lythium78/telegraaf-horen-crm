@@ -1296,53 +1296,216 @@ a:hover {
 
 /* ============================================================
    Responsive — mobiel (max 640px)
+   Sidebar wordt navigatiebalk onderaan
    ============================================================ */
 @media (max-width: 640px) {
+
+  /* === Layout === */
+  .app-layout {
+    flex-direction: column;
+    height: 100dvh; /* dvh = correct op mobiele browsers */
+    height: 100vh;  /* fallback */
+  }
+
+  /* === Sidebar → bottom nav === */
+  .sidebar {
+    order: 2;
+    width: 100%;
+    min-width: unset;
+    height: 58px;
+    min-height: 58px;
+    flex-direction: row;
+    box-shadow: 0 -2px 8px rgba(0,0,0,.2);
+  }
+
+  .sidebar-logo { display: none; }
+
+  .sidebar-nav {
+    flex-direction: row;
+    flex: 1;
+    padding: 0;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+
+  .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0.3rem 0.25rem 0.35rem;
+    gap: 2px;
+    border-left: none;
+    border-top: 3px solid transparent;
+    min-width: 50px;
+  }
+
+  .nav-label {
+    display: block;
+    font-size: 0.56rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .nav-icon { font-size: 1rem; width: auto; }
+
+  .nav-item.active {
+    border-left: none;
+    border-top: 3px solid var(--kleur-teal);
+    background: rgba(255,255,255,.1);
+  }
+
+  /* Sidebar footer: klein uitlog-knopje rechts in de balk */
+  .sidebar-footer {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 0.5rem;
+    border-top: none;
+    border-left: 1px solid rgba(255,255,255,.12);
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer .user-info { display: none; }
+
+  .btn-uitloggen {
+    display: block;
+    font-size: 0.6rem;
+    padding: 0.3rem 0.45rem;
+    background: rgba(255,255,255,.1);
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* === Main area vult ruimte boven bottom nav === */
+  .main-area {
+    order: 1;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem 0.9rem 0.75rem;
+  }
+
+  /* === Section header === */
+  .section-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .section-header h1 { font-size: 1.2rem; }
+
+  /* === Stats === */
   .stats-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-
-  .pipeline-bar {
-    flex-wrap: wrap;
-  }
-
-  .pipeline-fase {
-    flex: 1 0 33%;
-    border-bottom: 1px solid var(--kleur-rand);
-  }
-
-  .main-area {
-    padding: 1rem 0.85rem;
-  }
-
-  .section-header h1 {
-    font-size: 1.3rem;
-  }
-
-  .modal-content {
-    padding: 1.25rem;
-    max-height: 95vh;
-  }
-
-  .form-rij {
-    flex-direction: column;
     gap: 0.6rem;
   }
 
-  .form-groep-smal {
-    flex: 1;
-    min-width: auto;
+  .stat-card { padding: 0.85rem 0.75rem; }
+  .stat-number { font-size: 1.6rem; }
+
+  /* === Dashboard === */
+  .dashboard-columns { grid-template-columns: 1fr; gap: 0.75rem; }
+
+  /* === Pipeline === */
+  .pipeline-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .pipeline-bar::-webkit-scrollbar { display: none; }
+
+  .pipeline-fase {
+    flex: 0 0 auto;
+    min-width: 88px;
+    font-size: 0.78rem;
+    padding: 0.6rem 0.5rem;
   }
 
-  .profiel-grid {
-    grid-template-columns: 1fr;
-  }
+  /* === Klanten === */
+  .klanten-layout { flex-direction: column; overflow: visible; }
+  .klanten-lijst-panel { width: 100%; }
+  .klant-detail-panel { min-height: 300px; }
+
+  .klant-detail-header { flex-direction: column; gap: 0.5rem; }
 
   .klant-detail-acties {
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
   }
+
+  /* === Detail tabs: horizontaal scrollbaar === */
+  .detail-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 0;
+    scrollbar-width: none;
+  }
+  .detail-tabs::-webkit-scrollbar { display: none; }
+  .detail-tab { flex-shrink: 0; }
+
+  /* === Modals als bottom sheet === */
+  .modal { align-items: flex-end; }
+
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: 93dvh;
+    max-height: 93vh;
+    padding: 1.25rem 1rem;
+    overflow-y: auto;
+  }
+
+  .modal-content-groot { max-height: 97dvh; max-height: 97vh; }
+
+  /* === Forms === */
+  .form-rij { flex-direction: column; gap: 0.6rem; }
+  .form-groep-smal { flex: 1; min-width: auto; }
+  .profiel-grid { grid-template-columns: 1fr; }
+
+  /* Voorkom iOS-zoom op focus (font-size < 16px triggert zoom) */
+  .form-input,
+  .form-select,
+  .zoekbalk,
+  select,
+  input,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* === Filter balk === */
+  .filter-balk { flex-wrap: wrap; gap: 0.5rem; }
+  .zoekbalk { width: 100%; }
+
+  /* === Taken === */
+  .taak-rij { flex-wrap: wrap; gap: 0.4rem; }
+
+  /* === Nazorg tabel: horizontaal scroll === */
+  .nazorg-tabel {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* === Beheer tabel === */
+  .beheer-tabel-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Verberg minder belangrijke kolommen */
+  .beheer-tabel th:nth-child(5),
+  .beheer-tabel td:nth-child(5) { display: none; } /* laatste login */
 }
 
 /* ============================================================
