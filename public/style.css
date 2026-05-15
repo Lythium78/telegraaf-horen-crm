@@ -1295,98 +1295,164 @@ a:hover {
 }
 
 /* ============================================================
+   Hamburger-menu elementen (altijd aanwezig, standaard verborgen)
+   ============================================================ */
+.mobiel-header {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 199;
+  transition: background 0.25s;
+}
+
+.sidebar-overlay.actief {
+  display: block;
+  background: rgba(0,0,0,0.45);
+}
+
+/* ============================================================
+   Voorkom horizontale scroll globaal (landscape + elk scherm)
+   ============================================================ */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* ============================================================
    Responsive — mobiel (max 640px)
-   Sidebar wordt navigatiebalk onderaan
+   Sidebar wordt hamburger slide-in menu
    ============================================================ */
 @media (max-width: 640px) {
 
   /* === Layout === */
   .app-layout {
     flex-direction: column;
-    height: 100dvh; /* dvh = correct op mobiele browsers */
-    height: 100vh;  /* fallback */
+    height: 100svh;
+    height: 100dvh;
+    height: 100vh;
   }
 
-  /* === Sidebar → bottom nav === */
-  .sidebar {
-    order: 2;
-    width: 100%;
-    min-width: unset;
-    height: 58px;
-    min-height: 58px;
+  /* === Mobiele header === */
+  .mobiel-header {
+    display: flex;
     flex-direction: row;
-    box-shadow: 0 -2px 8px rgba(0,0,0,.2);
+    align-items: center;
+    height: 52px;
+    min-height: 52px;
+    background: var(--kleur-donkerblauw);
+    padding: 0 1rem;
+    flex-shrink: 0;
+    z-index: 100;
+    position: relative;
   }
 
-  .sidebar-logo { display: none; }
+  .hamburger-knop {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.15s;
+  }
+  .hamburger-knop:hover { background: rgba(255,255,255,.12); }
+
+  .mobiel-titel {
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-left: 0.75rem;
+    letter-spacing: 0.01em;
+  }
+
+  .mobiel-header-spacer { flex: 1; }
+
+  /* === Sidebar → slide-in vanuit links === */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100%;
+    min-width: unset;
+    z-index: 200;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,.3);
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-logo { display: flex; }
 
   .sidebar-nav {
-    flex-direction: row;
-    flex: 1;
-    padding: 0;
+    flex-direction: column;
+    padding: 0.5rem 0;
     gap: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
   }
-  .sidebar-nav::-webkit-scrollbar { display: none; }
 
   .nav-item {
-    flex: 1;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 0.3rem 0.25rem 0.35rem;
-    gap: 2px;
-    border-left: none;
-    border-top: 3px solid transparent;
-    min-width: 50px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0.75rem 1.25rem;
+    gap: 0.75rem;
+    border-left: 3px solid transparent;
+    border-top: none;
+    min-width: unset;
+    width: 100%;
   }
 
   .nav-label {
     display: block;
-    font-size: 0.56rem;
-    line-height: 1;
+    font-size: 0.95rem;
     white-space: nowrap;
   }
 
-  .nav-icon { font-size: 1rem; width: auto; }
+  .nav-icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
 
   .nav-item.active {
-    border-left: none;
-    border-top: 3px solid var(--kleur-teal);
+    border-left: 3px solid var(--kleur-teal);
+    border-top: none;
     background: rgba(255,255,255,.1);
   }
 
-  /* Sidebar footer: klein uitlog-knopje rechts in de balk */
   .sidebar-footer {
-    flex-direction: row;
-    align-items: center;
-    padding: 0 0.5rem;
-    border-top: none;
-    border-left: 1px solid rgba(255,255,255,.12);
-    flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(255,255,255,.12);
   }
 
-  .sidebar-footer .user-info { display: none; }
+  .sidebar-footer .user-info { display: flex; }
 
   .btn-uitloggen {
     display: block;
-    font-size: 0.6rem;
-    padding: 0.3rem 0.45rem;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.75rem;
     background: rgba(255,255,255,.1);
     border-radius: 6px;
-    white-space: nowrap;
+    margin-top: 0.5rem;
+    width: 100%;
+    text-align: center;
   }
 
-  /* === Main area vult ruimte boven bottom nav === */
+  /* === Main area vult de rest === */
   .main-area {
-    order: 1;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 1rem 0.9rem 0.75rem;
+    padding: 1rem 0.9rem 1.5rem;
   }
 
   /* === Section header === */
@@ -1460,13 +1526,19 @@ a:hover {
     max-width: 100%;
     margin: 0;
     border-radius: 16px 16px 0 0;
-    max-height: 93dvh;
-    max-height: 93vh;
+    max-height: 90svh;
+    max-height: 90dvh;
+    max-height: 90vh;
     padding: 1.25rem 1rem;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .modal-content-groot { max-height: 97dvh; max-height: 97vh; }
+  .modal-content-groot {
+    max-height: 96svh;
+    max-height: 96dvh;
+    max-height: 96vh;
+  }
 
   /* === Forms === */
   .form-rij { flex-direction: column; gap: 0.6rem; }
@@ -1505,7 +1577,29 @@ a:hover {
 
   /* Verberg minder belangrijke kolommen */
   .beheer-tabel th:nth-child(5),
-  .beheer-tabel td:nth-child(5) { display: none; } /* laatste login */
+  .beheer-tabel td:nth-child(5) { display: none; }
+}
+
+/* ============================================================
+   Landscape-modus fix — geen zijdelingse scroll
+   ============================================================ */
+@media (max-height: 480px) and (orientation: landscape) {
+  .modal-content {
+    max-height: 92svh;
+    max-height: 92dvh;
+    max-height: 92vh;
+    border-radius: 12px;
+    margin: 4vh auto;
+    width: calc(100% - 2rem);
+    max-width: 640px;
+  }
+
+  .modal { align-items: center; }
+
+  .main-area {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
 }
 
 /* ============================================================
