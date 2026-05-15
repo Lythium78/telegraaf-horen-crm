@@ -145,11 +145,71 @@ Voer de implementatie uit op basis van het plan:
 - Spawn meerdere agents **parallel** voor onafhankelijke taken
 - Gebruik een **Explore** agent voor onderzoek parallel aan een implementatie-agent
 
-### Altijd na implementatie
+### Altijd na implementatie — maar VOOR commit/push
+Ga naar Fase 5 (Demo & Test). Commit en push PAS NA geslaagde demo.
+
+---
+
+## Fase 5: Demo & Test (verplicht vóór elke commit)
+
+**NOOIT committen of pushen zonder deze fase te doorlopen.**
+
+### 5.1 Server starten
+```bash
+npm start
+# of: node server.js
+```
+Wacht tot de server meldt dat hij online is. Als de server niet start: fix de fout eerst.
+
+### 5.2 Test de nieuwe functionaliteit (golden path)
+Loop het volledige gebruik door alsof je een eindgebruiker bent:
+- Open de relevante pagina/sectie in de browser (via `curl` of beschrijf de stappen)
+- Voer de happy path uit: maak aan, bewerk, gebruik de feature
+- Controleer de API response direct: `curl -s http://localhost:PORT/api/... | head`
+- Controleer dat de auditlog een entry bevat voor de actie
+
+### 5.3 Test edge cases
+Afhankelijk van de feature, test minimaal:
+- Lege invoer / ontbrekende verplichte velden → verwacht 400-fout
+- Ongeldig ID → verwacht 400 of 404
+- Toegang zonder login → verwacht redirect naar /login (401)
+- Toegang met verkeerde rol → verwacht 403
+- SQL-injectie poging in tekstvelden (controleer dat het veilig afgehandeld wordt)
+
+### 5.4 Regressietest bestaande functies
+Na elke wijziging, controleer dat bestaande routes nog werken:
+```bash
+# Health check
+curl -s http://localhost:PORT/api/health
+
+# Login (vervang PORT)
+curl -s -c /tmp/crm-cookies.txt -X POST http://localhost:PORT/login \
+  -H "Content-Type: application/json" \
+  -d '{"gebruikersnaam":"mield","wachtwoord":"WACHTWOORD"}' | head -c 200
+```
+
+### 5.5 Rapporteer testresultaten
+Geef de gebruiker een korte testrapportage:
+
+```
+[Test] ✅ Server gestart op poort 3001
+[Test] ✅ Nieuwe functie: [beschrijving golden path] → werkt correct
+[Test] ✅ Edge case lege invoer → 400 Bad Request
+[Test] ✅ Edge case verkeerde rol → 403 Forbidden
+[Test] ✅ Bestaande /api/health → healthy
+[Test] ✅ Geen regressies gevonden
+```
+
+Als een test **faalt** (❌):
+1. Fix de bug direct
+2. Hertest tot alles groen is
+3. Dan pas naar stap 5.6
+
+### 5.6 Na geslaagde tests — dan pas commit & push
 1. Controleer of CLAUDE.md geüpdatet moet worden
 2. Commit met duidelijke message (Nederlands voor domeinwijzigingen, Engels voor technische)
 3. Push naar de feature branch
-4. Informeer de gebruiker wat er gedaan is en wat de volgende stap is
+4. Informeer de gebruiker: testresultaten + wat er veranderd is + volgende stap
 
 ---
 
@@ -158,8 +218,8 @@ Voer de implementatie uit op basis van het plan:
 - Schrijf in het **Nederlands** naar de gebruiker
 - Technische termen (API, endpoint, middleware) mogen in het Engels blijven
 - Wees direct en kort — geen lange inleidingen
-- Geef altijd aan in welke fase je zit: **[Analyse]**, **[Vragen]**, **[Plan]**, **[Uitvoering]**
-- Sluit elke taak af met: wat er veranderd is + wat de volgende stap is
+- Geef altijd aan in welke fase je zit: **[Analyse]**, **[Vragen]**, **[Plan]**, **[Uitvoering]**, **[Test]**
+- Sluit elke taak af met: testresultaten + wat er veranderd is + wat de volgende stap is
 
 ---
 
@@ -169,13 +229,18 @@ Voer de implementatie uit op basis van het plan:
 Gebruiker: "Ik wil een zoekfunctie toevoegen aan de contacten"
 
 Super Agent:
-[Analyse] → Explore agent leest server.js, database.js, public/app.js
-[Vragen] → AskUserQuestion:
-  1. Zoek op welke velden? (naam + email / naam + email + bedrijf / alle velden)
-  2. Voor welke rol beschikbaar? (iedereen / medewerker+ / admin only)
-  3. Direct deployen naar Railway of eerst lokaal testen?
-[Plan] → Plan agent maakt implementatieplan
+[Analyse]  → Explore agent leest server.js, database.js, public/app.js
+[Vragen]   → AskUserQuestion: op welke velden? welke rol? timing?
+[Plan]     → Plan agent maakt implementatieplan
 [Uitvoering] → Implementeer database zoekfunctie + API endpoint + frontend
-[Commit] → git commit + push
-[Afsluiting] → Melding: "Zoekfunctie toegevoegd op 3 velden. Route: GET /api/contacts?zoek=..."
+[Test]     → npm start → curl /api/contacts?zoek=jan → controleer resultaat
+             → test lege zoekterm → test zonder login (401?) → regressie health check
+             → Rapport:
+               ✅ Server gestart
+               ✅ Zoeken op "jan" → 2 resultaten correct teruggegeven
+               ✅ Lege zoekterm → alle contacten (geen fout)
+               ✅ Zonder login → 401
+               ✅ /api/health → healthy
+[Commit]   → git commit + push (ALLEEN na groene tests)
+[Afsluiting] → "Zoekfunctie klaar. GET /api/contacts?zoek=term. Alle tests geslaagd."
 ```
