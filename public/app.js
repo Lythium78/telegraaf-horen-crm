@@ -165,31 +165,27 @@ function setupModals() {
 // NAVIGATIE
 // ============================================================
 function setupNavigatie() {
-  const hamburgerKnop = document.getElementById('hamburger-knop');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const sidebar = document.querySelector('.sidebar');
-
-  function sluitSidebar() {
-    if (sidebar) sidebar.classList.remove('open');
-    if (sidebarOverlay) sidebarOverlay.classList.remove('actief');
+  function sluitNav() {
+    document.body.classList.remove('nav-open');
   }
 
+  const hamburgerKnop = document.getElementById('hamburger-knop');
   if (hamburgerKnop) {
     hamburgerKnop.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      sidebarOverlay.classList.toggle('actief');
+      document.body.classList.toggle('nav-open');
     });
   }
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', sluitSidebar);
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', sluitNav);
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      sluitSidebar();
+      sluitNav();
       const sectie = item.dataset.section;
-      schakelSectie(sectie);
+      if (sectie) schakelSectie(sectie);
     });
   });
 

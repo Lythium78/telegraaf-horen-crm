@@ -1295,7 +1295,7 @@ a:hover {
 }
 
 /* ============================================================
-   Hamburger-menu elementen (altijd aanwezig, standaard verborgen)
+   Hamburger-menu elementen — verborgen op desktop
    ============================================================ */
 .mobiel-header {
   display: none;
@@ -1303,20 +1303,10 @@ a:hover {
 
 .sidebar-overlay {
   display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0);
-  z-index: 199;
-  transition: background 0.25s;
-}
-
-.sidebar-overlay.actief {
-  display: block;
-  background: rgba(0,0,0,0.45);
 }
 
 /* ============================================================
-   Voorkom horizontale scroll globaal (landscape + elk scherm)
+   Voorkom horizontale scroll globaal
    ============================================================ */
 body {
   overflow-x: hidden;
@@ -1374,24 +1364,45 @@ body {
 
   .mobiel-header-spacer { flex: 1; }
 
-  /* === Sidebar → slide-in vanuit links (transform voor GPU + iOS Safari) === */
+  /* === Overlay: altijd aanwezig op mobiel, onzichtbaar tenzij nav-open === */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  body.nav-open .sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* === Sidebar: slide-in vanuit links via transform === */
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: 260px;
-    height: 100dvh;
     height: 100vh;
     min-width: unset;
-    z-index: 200;
+    z-index: 999;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    box-shadow: 4px 0 20px rgba(0,0,0,.3);
+    transition: transform 0.28s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,.35);
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
-  .sidebar.open {
+  body.nav-open .sidebar {
     transform: translateX(0);
+  }
+
+  body.nav-open {
+    overflow: hidden;
   }
 
   .sidebar-logo { display: flex; }
