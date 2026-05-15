@@ -165,8 +165,29 @@ function setupModals() {
 // NAVIGATIE
 // ============================================================
 function setupNavigatie() {
+  const hamburgerKnop = document.getElementById('hamburger-knop');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebar = document.querySelector('.sidebar');
+
+  function sluitSidebar() {
+    if (sidebar) sidebar.classList.remove('open');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('actief');
+  }
+
+  if (hamburgerKnop) {
+    hamburgerKnop.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('actief');
+    });
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', sluitSidebar);
+  }
+
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
+      sluitSidebar();
       const sectie = item.dataset.section;
       schakelSectie(sectie);
     });

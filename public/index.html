@@ -2,12 +2,22 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Telegraaf Horen - CRM</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app-layout">
+
+    <!-- Mobiele header (hamburger) -->
+    <header class="mobiel-header">
+      <button class="hamburger-knop" id="hamburger-knop" aria-label="Menu openen">&#9776;</button>
+      <span class="mobiel-titel">Telegraaf Horen</span>
+      <span class="mobiel-header-spacer"></span>
+    </header>
+
+    <!-- Overlay voor hamburger menu -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Sidebar navigatie -->
     <aside class="sidebar">
