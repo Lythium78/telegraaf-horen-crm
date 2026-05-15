@@ -1318,9 +1318,8 @@ a:hover {
 /* ============================================================
    Voorkom horizontale scroll globaal (landscape + elk scherm)
    ============================================================ */
-html, body {
+body {
   overflow-x: hidden;
-  max-width: 100%;
 }
 
 /* ============================================================
@@ -1375,22 +1374,24 @@ html, body {
 
   .mobiel-header-spacer { flex: 1; }
 
-  /* === Sidebar → slide-in vanuit links === */
+  /* === Sidebar → slide-in vanuit links (transform voor GPU + iOS Safari) === */
   .sidebar {
     position: fixed;
     top: 0;
-    left: -280px;
+    left: 0;
     width: 260px;
-    height: 100%;
+    height: 100dvh;
+    height: 100vh;
     min-width: unset;
     z-index: 200;
-    transition: left 0.25s ease;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
     box-shadow: 4px 0 20px rgba(0,0,0,.3);
     overflow-y: auto;
   }
 
   .sidebar.open {
-    left: 0;
+    transform: translateX(0);
   }
 
   .sidebar-logo { display: flex; }
