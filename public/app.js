@@ -31,6 +31,7 @@ async function init() {
   setupModals();
   setupFormulieren();
   setupFilters();
+  setupBeheerFormulieren();
   await laadDashboard();
 }
 
@@ -198,6 +199,7 @@ async function schakelSectie(sectie) {
     case 'taken':        await laadTaken(); break;
     case 'bestellingen': await laadBestellingen(); break;
     case 'nazorg':       await laadNazorg(); break;
+    case 'beheer':       await laadGebruikers(); break;
   }
 }
 
@@ -214,6 +216,11 @@ async function laadHuidigeGebruiker() {
       document.getElementById('sidebar-user-name').textContent = currentUser.naam;
       const avatar = document.getElementById('user-avatar');
       avatar.textContent = currentUser.naam.charAt(0).toUpperCase();
+
+      // Beheer nav alleen zichtbaar voor admins
+      if (currentUser.rol === 'admin') {
+        document.querySelector('.nav-item-admin').classList.remove('verborgen');
+      }
     }
   } catch (err) {
     console.error('[APP] Fout bij laden gebruiker:', err);
@@ -1532,6 +1539,217 @@ function maakNazorgTaak(klantNaam, contactId) {
   }
   document.getElementById('modal-taak-titel').textContent = 'Nazorg Taak Aanmaken';
   openModal('modal-taak');
+}
+
+// ============================================================
+// GEBRUIKERSBEHEER (admin only)
+// ============================================================
+
+let gebruikers = [];
+
+async function laadGebruikers() {
+  try {
+    const resp = await apiFetch('/api/gebruikers');
+    if (!resp) return;
+    const data = await resp.json();
+    if (data.success) {
+      gebruikers = data.data;
+      renderGebruikersLijst();
+    } else {
+      document.getElementById('beheer-lijst').innerHTML = '<p class="lege-staat">Kon gebruikers niet laden</p>';
+    }
+  } catch (err) {
+    console.error('[APP] Fout bij laden gebruikers:', err);
+    document.getElementById('beheer-lijst').innerHTML = '<p class="lege-staat">Fout bij het laden</p>';
+  }
+}
+
+function renderGebruikersLijst() {
+  const container = document.getElementById('beheer-lijst');
+
+  if (gebruikers.length === 0) {
+    container.innerHTML = '<p class="lege-staat">Geen gebruikers gevonden</p>';
+    return;
+  }
+
+  const rolLabel = { admin: 'Admin', medewerker: 'Medewerker', viewer: 'Viewer' };
+
+  container.innerHTML = `
+    <table class="beheer-tabel">
+      <thead>
+        <tr>
+          <th>Naam</th>
+          <th>Gebruikersnaam</th>
+          <th>Rol</th>
+          <th>Status</th>
+          <th>Laatste login</th>
+          <th>Acties</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${gebruikers.map(g => `
+          <tr class="${g.actief ? '' : 'rij-inactief'}">
+            <td>${escapeHtml(g.naam)}</td>
+            <td><code>${escapeHtml(g.gebruikersnaam)}</code></td>
+            <td><span class="badge badge-rol-${escapeHtml(g.rol)}">${escapeHtml(rolLabel[g.rol] || g.rol)}</span></td>
+            <td>${g.actief ? '<span class="badge badge-actief">Actief</span>' : '<span class="badge badge-inactief">Inactief</span>'}</td>
+            <td>${g.laatste_login ? formatDatumTijd(g.laatste_login) : 'Nog nooit'}</td>
+            <td class="beheer-acties">
+              <button class="btn btn-small btn-secondary" data-actie="bewerk" data-id="${g.id}">Bewerken</button>
+              <button class="btn btn-small btn-secondary" data-actie="wachtwoord" data-id="${g.id}" data-naam="${escapeHtml(g.naam)}">Wachtwoord</button>
+              ${g.id !== (currentUser && currentUser.id) ? `
+                <button class="btn btn-small ${g.actief ? 'btn-danger' : 'btn-primary'}" data-actie="toggle" data-id="${g.id}" data-actief="${g.actief}">
+                  ${g.actief ? 'Deactiveren' : 'Activeren'}
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  container.querySelectorAll('[data-actie="bewerk"]').forEach(knop => {
+    knop.addEventListener('click', () => bewerkGebruiker(Number(knop.dataset.id)));
+  });
+
+  container.querySelectorAll('[data-actie="wachtwoord"]').forEach(knop => {
+    knop.addEventListener('click', () => resetWachtwoord(Number(knop.dataset.id), knop.dataset.naam));
+  });
+
+  container.querySelectorAll('[data-actie="toggle"]').forEach(knop => {
+    knop.addEventListener('click', () => toggleGebruiker(Number(knop.dataset.id), Number(knop.dataset.actief)));
+  });
+}
+
+function bewerkGebruiker(id) {
+  const g = gebruikers.find(u => u.id === id);
+  if (!g) return;
+
+  document.getElementById('medewerker-id').value = id;
+  document.getElementById('medewerker-naam').value = g.naam;
+  document.getElementById('medewerker-rol').value = g.rol;
+
+  // Verberg gebruikersnaam + wachtwoord velden bij bewerken
+  document.getElementById('medewerker-gebruikersnaam-rij').style.display = 'none';
+  document.getElementById('medewerker-wachtwoord-rij').style.display = 'none';
+  document.getElementById('medewerker-gebruikersnaam').removeAttribute('required');
+  document.getElementById('medewerker-wachtwoord').removeAttribute('required');
+
+  document.getElementById('modal-medewerker-titel').textContent = `${escapeHtml(g.naam)} bewerken`;
+  openModal('modal-medewerker');
+}
+
+function resetWachtwoord(id, naam) {
+  document.getElementById('wachtwoord-gebruiker-id').value = id;
+  document.getElementById('wachtwoord-gebruiker-naam').textContent = `Wachtwoord resetten voor: ${naam}`;
+  document.getElementById('nieuw-wachtwoord').value = '';
+  openModal('modal-wachtwoord');
+}
+
+async function toggleGebruiker(id, huidigActief) {
+  const nieuwActief = huidigActief ? 0 : 1;
+  const actie = nieuwActief ? 'activeren' : 'deactiveren';
+
+  toonBevestiging(
+    `Gebruiker ${actie}?`,
+    `Weet je zeker dat je deze medewerker wilt ${actie}?`,
+    async () => {
+      try {
+        const resp = await apiFetch(`/api/gebruikers/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ actief: nieuwActief })
+        });
+        if (!resp) return;
+        const data = await resp.json();
+        if (data.success) {
+          toonToast(`Medewerker ${actie === 'activeren' ? 'geactiveerd' : 'gedeactiveerd'}`, 'success');
+          await laadGebruikers();
+        } else {
+          toonToast(data.error || 'Fout bij bijwerken', 'error');
+        }
+      } catch (err) {
+        toonToast('Verbindingsfout', 'error');
+      }
+    }
+  );
+}
+
+function setupBeheerFormulieren() {
+  // Knop nieuwe medewerker
+  document.getElementById('btn-nieuwe-medewerker').addEventListener('click', () => {
+    document.getElementById('form-medewerker').reset();
+    document.getElementById('medewerker-id').value = '';
+    document.getElementById('medewerker-gebruikersnaam-rij').style.display = '';
+    document.getElementById('medewerker-wachtwoord-rij').style.display = '';
+    document.getElementById('medewerker-gebruikersnaam').setAttribute('required', '');
+    document.getElementById('medewerker-wachtwoord').setAttribute('required', '');
+    document.getElementById('modal-medewerker-titel').textContent = 'Nieuwe Medewerker';
+    openModal('modal-medewerker');
+  });
+
+  // Formulier medewerker opslaan
+  document.getElementById('form-medewerker').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('medewerker-id').value;
+    const naam = document.getElementById('medewerker-naam').value.trim();
+    const rol = document.getElementById('medewerker-rol').value;
+
+    try {
+      let resp;
+      if (id) {
+        // Bewerken
+        resp = await apiFetch(`/api/gebruikers/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ naam, rol })
+        });
+      } else {
+        // Nieuw aanmaken
+        const gebruikersnaam = document.getElementById('medewerker-gebruikersnaam').value.trim();
+        const wachtwoord = document.getElementById('medewerker-wachtwoord').value;
+        resp = await apiFetch('/api/gebruikers', {
+          method: 'POST',
+          body: JSON.stringify({ naam, gebruikersnaam, wachtwoord, rol })
+        });
+      }
+
+      if (!resp) return;
+      const data = await resp.json();
+      if (data.success) {
+        sluitModal('modal-medewerker');
+        toonToast(id ? 'Medewerker bijgewerkt' : 'Medewerker aangemaakt', 'success');
+        await laadGebruikers();
+      } else {
+        toonToast(data.error || 'Fout bij opslaan', 'error');
+      }
+    } catch (err) {
+      toonToast('Verbindingsfout', 'error');
+    }
+  });
+
+  // Formulier wachtwoord resetten
+  document.getElementById('form-wachtwoord').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('wachtwoord-gebruiker-id').value;
+    const wachtwoord = document.getElementById('nieuw-wachtwoord').value;
+
+    try {
+      const resp = await apiFetch(`/api/gebruikers/${id}/wachtwoord`, {
+        method: 'POST',
+        body: JSON.stringify({ wachtwoord })
+      });
+      if (!resp) return;
+      const data = await resp.json();
+      if (data.success) {
+        sluitModal('modal-wachtwoord');
+        toonToast('Wachtwoord gewijzigd', 'success');
+      } else {
+        toonToast(data.error || 'Fout bij wijzigen wachtwoord', 'error');
+      }
+    } catch (err) {
+      toonToast('Verbindingsfout', 'error');
+    }
+  });
 }
 
 // ============================================================

@@ -492,6 +492,42 @@ function createGebruiker(naam, gebruikersnaam, wachtwoordHash, rol = 'medewerker
   }
 }
 
+function updateGebruiker(id, data) {
+  try {
+    const updates = [];
+    const values = [];
+
+    if (data.naam !== undefined) { updates.push('naam = ?'); values.push(data.naam); }
+    if (data.rol !== undefined) { updates.push('rol = ?'); values.push(data.rol); }
+    if (data.actief !== undefined) { updates.push('actief = ?'); values.push(data.actief ? 1 : 0); }
+
+    if (updates.length === 0) return;
+
+    values.push(parseInt(id));
+    const stmt = db.prepare(`UPDATE gebruikers SET ${updates.join(', ')} WHERE id = ?`);
+    stmt.bind(values);
+    stmt.step();
+    stmt.free();
+    saveDatabase();
+  } catch (err) {
+    console.error('[DB] Error updating gebruiker:', err);
+    throw err;
+  }
+}
+
+function updateWachtwoord(id, hash) {
+  try {
+    const stmt = db.prepare('UPDATE gebruikers SET wachtwoord_hash = ? WHERE id = ?');
+    stmt.bind([hash, parseInt(id)]);
+    stmt.step();
+    stmt.free();
+    saveDatabase();
+  } catch (err) {
+    console.error('[DB] Error updating wachtwoord:', err);
+    throw err;
+  }
+}
+
 // ============================================================
 // AUDIT LOGGING FUNCTIES
 // ============================================================
@@ -1349,6 +1385,8 @@ module.exports = {
   getAllGebruikers,
   updateLaatsteLogin,
   createGebruiker,
+  updateGebruiker,
+  updateWachtwoord,
   // Audit
   logAudit,
   // Leads

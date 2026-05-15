@@ -44,6 +44,10 @@
           <span class="nav-icon">&#9829;</span>
           <span class="nav-label">Nazorg</span>
         </button>
+        <button class="nav-item nav-item-admin verborgen" data-section="beheer">
+          <span class="nav-icon">&#9881;</span>
+          <span class="nav-label">Beheer</span>
+        </button>
         <a class="nav-item" href="/foto-editor" style="text-decoration:none;">
           <span class="nav-icon">📷</span>
           <span class="nav-label">Foto Editor</span>
@@ -314,6 +318,17 @@
           <div id="nazorg-garantie" class="card-body">
             <p class="laden-tekst">Laden...</p>
           </div>
+        </div>
+      </section>
+
+      <!-- ===== BEHEER ===== -->
+      <section id="section-beheer" class="content-section">
+        <div class="section-header">
+          <h1>Gebruikersbeheer</h1>
+          <button class="btn btn-primary" id="btn-nieuwe-medewerker">+ Nieuwe Medewerker</button>
+        </div>
+        <div id="beheer-lijst" class="beheer-tabel-wrapper">
+          <p class="laden-tekst">Laden...</p>
         </div>
       </section>
 
@@ -629,6 +644,61 @@
         <div class="form-acties">
           <button type="submit" class="btn btn-primary">Opslaan</button>
           <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-notitie">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Medewerker aanmaken / bewerken -->
+  <div id="modal-medewerker" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-medewerker-titel">
+    <div class="modal-content modal-content-klein">
+      <button class="modal-sluit" data-modal="modal-medewerker" aria-label="Sluiten">&times;</button>
+      <h2 id="modal-medewerker-titel" class="modal-titel">Nieuwe Medewerker</h2>
+      <form id="form-medewerker">
+        <input type="hidden" id="medewerker-id">
+        <div class="form-rij">
+          <label class="form-label">Volledige naam *</label>
+          <input type="text" id="medewerker-naam" class="form-input" required maxlength="100">
+        </div>
+        <div class="form-rij" id="medewerker-gebruikersnaam-rij">
+          <label class="form-label">Gebruikersnaam *</label>
+          <input type="text" id="medewerker-gebruikersnaam" class="form-input" maxlength="50" placeholder="alleen letters, cijfers en _">
+        </div>
+        <div class="form-rij" id="medewerker-wachtwoord-rij">
+          <label class="form-label">Wachtwoord * <small>(min. 8 tekens)</small></label>
+          <input type="password" id="medewerker-wachtwoord" class="form-input" minlength="8">
+        </div>
+        <div class="form-rij">
+          <label class="form-label">Rol *</label>
+          <select id="medewerker-rol" class="form-select">
+            <option value="medewerker">Medewerker</option>
+            <option value="viewer">Viewer (alleen lezen)</option>
+            <option value="admin">Admin (volledig beheer)</option>
+          </select>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-medewerker">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Wachtwoord resetten -->
+  <div id="modal-wachtwoord" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content modal-content-klein">
+      <button class="modal-sluit" data-modal="modal-wachtwoord" aria-label="Sluiten">&times;</button>
+      <h2 class="modal-titel">Wachtwoord Resetten</h2>
+      <form id="form-wachtwoord">
+        <input type="hidden" id="wachtwoord-gebruiker-id">
+        <p id="wachtwoord-gebruiker-naam" class="beheer-reset-naam"></p>
+        <div class="form-rij">
+          <label class="form-label">Nieuw wachtwoord * <small>(min. 8 tekens)</small></label>
+          <input type="password" id="nieuw-wachtwoord" class="form-input" minlength="8" required>
+        </div>
+        <div class="form-acties">
+          <button type="submit" class="btn btn-primary">Wachtwoord Wijzigen</button>
+          <button type="button" class="btn btn-secondary modal-annuleer" data-modal="modal-wachtwoord">Annuleren</button>
         </div>
       </form>
     </div>

@@ -1344,3 +1344,52 @@ a:hover {
     align-items: flex-end;
   }
 }
+
+/* ============================================================
+   GEBRUIKERSBEHEER
+   ============================================================ */
+.beheer-tabel-wrapper { overflow-x: auto; }
+
+.beheer-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.beheer-tabel th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #f5f7fa;
+  color: #5a6a7a;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e8ecf0;
+}
+
+.beheer-tabel td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f0f3f6;
+  vertical-align: middle;
+}
+
+.beheer-tabel tr:hover td { background: #f9fbfc; }
+.rij-inactief td { opacity: 0.55; }
+
+.beheer-acties {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.badge-actief         { background: rgba(39,174,96,.15);  color: #1e8a4f; }
+.badge-rol-admin      { background: rgba(18,36,62,.12);   color: #12243E; }
+.badge-rol-medewerker { background: rgba(58,166,185,.12); color: #2a7a8f; }
+.badge-rol-viewer     { background: #edf0f3;              color: #6b7c93; }
+
+.beheer-reset-naam {
+  font-weight: 600;
+  color: #12243E;
+  margin-bottom: 1rem;
+}
