@@ -274,6 +274,29 @@ function getAllContacts() {
   }
 }
 
+function zoekContacts(zoekterm) {
+  try {
+    const pattern = `%${zoekterm}%`;
+    const stmt = db.prepare(`
+      SELECT * FROM contacts
+      WHERE naam LIKE ? OR email LIKE ? OR bedrijf LIKE ?
+        OR telefoonnummer LIKE ? OR mobiel LIKE ? OR woonplaats LIKE ?
+        OR klantnummer_extern LIKE ?
+      ORDER BY naam ASC
+    `);
+    stmt.bind([pattern, pattern, pattern, pattern, pattern, pattern, pattern]);
+    const resultaat = [];
+    while (stmt.step()) {
+      resultaat.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return resultaat;
+  } catch (err) {
+    console.error('[DB] Error searching contacts:', err);
+    return [];
+  }
+}
+
 function getContactById(id) {
   try {
     const stmt = db.prepare('SELECT * FROM contacts WHERE id = ?');
@@ -465,6 +488,42 @@ function createGebruiker(naam, gebruikersnaam, wachtwoordHash, rol = 'medewerker
     console.log('[DB] Created user:', gebruikersnaam);
   } catch (err) {
     console.error('[DB] Error creating gebruiker:', err);
+    throw err;
+  }
+}
+
+function updateGebruiker(id, data) {
+  try {
+    const updates = [];
+    const values = [];
+
+    if (data.naam !== undefined) { updates.push('naam = ?'); values.push(data.naam); }
+    if (data.rol !== undefined) { updates.push('rol = ?'); values.push(data.rol); }
+    if (data.actief !== undefined) { updates.push('actief = ?'); values.push(data.actief ? 1 : 0); }
+
+    if (updates.length === 0) return;
+
+    values.push(parseInt(id));
+    const stmt = db.prepare(`UPDATE gebruikers SET ${updates.join(', ')} WHERE id = ?`);
+    stmt.bind(values);
+    stmt.step();
+    stmt.free();
+    saveDatabase();
+  } catch (err) {
+    console.error('[DB] Error updating gebruiker:', err);
+    throw err;
+  }
+}
+
+function updateWachtwoord(id, hash) {
+  try {
+    const stmt = db.prepare('UPDATE gebruikers SET wachtwoord_hash = ? WHERE id = ?');
+    stmt.bind([hash, parseInt(id)]);
+    stmt.step();
+    stmt.free();
+    saveDatabase();
+  } catch (err) {
+    console.error('[DB] Error updating wachtwoord:', err);
     throw err;
   }
 }
@@ -1316,6 +1375,7 @@ module.exports = {
   saveDatabase,
   // Contacts
   getAllContacts,
+  zoekContacts,
   getContactById,
   createContact,
   updateContact,
@@ -1325,6 +1385,8 @@ module.exports = {
   getAllGebruikers,
   updateLaatsteLogin,
   createGebruiker,
+  updateGebruiker,
+  updateWachtwoord,
   // Audit
   logAudit,
   // Leads

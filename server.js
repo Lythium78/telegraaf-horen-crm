@@ -333,12 +333,21 @@ app.get('/api/stats', vereistInlog, (req, res) => {
 // CONTACTS ROUTES
 // ============================================================
 
-// GET alle contacts
+// GET alle contacts (optioneel: ?zoek=term zoekt op naam, email, bedrijf, telefoon, woonplaats)
 app.get('/api/contacts', vereistInlog, (req, res) => {
   try {
-    const contacts = database.getAllContacts();
-    auditLog('contacts_opgelijst', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
-    res.json({ success: true, data: contacts });
+    const zoek = req.query.zoek ? String(req.query.zoek).trim().substring(0, 200) : null;
+
+    let contactenLijst;
+    if (zoek && zoek.length >= 2) {
+      contactenLijst = database.zoekContacts(zoek);
+      auditLog('contacts_gezocht', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip, lengte: zoek.length });
+    } else {
+      contactenLijst = database.getAllContacts();
+      auditLog('contacts_opgelijst', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
+    }
+
+    res.json({ success: true, data: contactenLijst });
   } catch (err) {
     console.error('[API] Error fetching contacts:', err);
     res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
@@ -1126,6 +1135,114 @@ app.delete('/api/bestellingen/:id', vereistInlog, vereistRol('admin'), (req, res
     res.json({ success: true, message: 'Bestelling verwijderd' });
   } catch (err) {
     console.error('[API] Error deleting bestelling:', err);
+    res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
+  }
+});
+
+// ============================================================
+// GEBRUIKERSBEHEER ROUTES (admin only)
+// ============================================================
+
+// GET alle gebruikers
+app.get('/api/gebruikers', vereistInlog, vereistRol('admin'), (req, res) => {
+  try {
+    const gebruikers = database.getAllGebruikers();
+    res.json({ success: true, data: gebruikers });
+  } catch (err) {
+    console.error('[API] Error fetching gebruikers:', err);
+    res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
+  }
+});
+
+// CREATE gebruiker
+app.post('/api/gebruikers', vereistInlog, vereistRol('admin'), async (req, res) => {
+  try {
+    const { naam, gebruikersnaam, wachtwoord, rol } = req.body;
+
+    if (!naam || !gebruikersnaam || !wachtwoord) {
+      return res.status(400).json({ success: false, error: 'Naam, gebruikersnaam en wachtwoord zijn verplicht' });
+    }
+    if (String(wachtwoord).length < 8) {
+      return res.status(400).json({ success: false, error: 'Wachtwoord moet minimaal 8 tekens zijn' });
+    }
+
+    const geldigeRollen = ['admin', 'medewerker', 'viewer'];
+    const schoneNaam = String(naam).trim().substring(0, 100);
+    const schoneGebruikersnaam = String(gebruikersnaam).trim().toLowerCase().replace(/[^a-z0-9_]/g, '').substring(0, 50);
+    const schoneRol = geldigeRollen.includes(rol) ? rol : 'medewerker';
+
+    if (!schoneGebruikersnaam) {
+      return res.status(400).json({ success: false, error: 'Ongeldige gebruikersnaam (alleen letters, cijfers en _)' });
+    }
+
+    const bestaand = database.getGebruikerByNaam(schoneGebruikersnaam);
+    if (bestaand) {
+      return res.status(400).json({ success: false, error: 'Gebruikersnaam is al in gebruik' });
+    }
+
+    const { hashWachtwoord } = require('./auth');
+    const hash = await hashWachtwoord(String(wachtwoord));
+    database.createGebruiker(schoneNaam, schoneGebruikersnaam, hash, schoneRol);
+
+    auditLog('gebruiker_aangemaakt', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
+    res.status(201).json({ success: true, message: `Medewerker '${schoneGebruikersnaam}' aangemaakt` });
+  } catch (err) {
+    console.error('[API] Error creating gebruiker:', err);
+    res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
+  }
+});
+
+// UPDATE gebruiker (naam, rol, actief)
+app.put('/api/gebruikers/:id', vereistInlog, vereistRol('admin'), (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id < 1) {
+      return res.status(400).json({ success: false, error: 'Ongeldig ID' });
+    }
+
+    // Eigen account niet deactiveren
+    if (id === req.session.gebruiker.id && req.body.actief === 0) {
+      return res.status(400).json({ success: false, error: 'Je kunt je eigen account niet deactiveren' });
+    }
+
+    const { naam, rol, actief } = req.body;
+    const geldigeRollen = ['admin', 'medewerker', 'viewer'];
+
+    const updateData = {};
+    if (naam !== undefined) updateData.naam = String(naam).trim().substring(0, 100);
+    if (rol !== undefined) updateData.rol = geldigeRollen.includes(rol) ? rol : 'medewerker';
+    if (actief !== undefined) updateData.actief = actief ? 1 : 0;
+
+    database.updateGebruiker(id, updateData);
+    auditLog('gebruiker_bijgewerkt', req.session.gebruiker.gebruikersnaam, id, { ip: req.ip });
+    res.json({ success: true, message: 'Medewerker bijgewerkt' });
+  } catch (err) {
+    console.error('[API] Error updating gebruiker:', err);
+    res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
+  }
+});
+
+// RESET wachtwoord
+app.post('/api/gebruikers/:id/wachtwoord', vereistInlog, vereistRol('admin'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id < 1) {
+      return res.status(400).json({ success: false, error: 'Ongeldig ID' });
+    }
+
+    const { wachtwoord } = req.body;
+    if (!wachtwoord || String(wachtwoord).length < 8) {
+      return res.status(400).json({ success: false, error: 'Wachtwoord moet minimaal 8 tekens zijn' });
+    }
+
+    const { hashWachtwoord } = require('./auth');
+    const hash = await hashWachtwoord(String(wachtwoord));
+    database.updateWachtwoord(id, hash);
+
+    auditLog('wachtwoord_gewijzigd', req.session.gebruiker.gebruikersnaam, id, { ip: req.ip });
+    res.json({ success: true, message: 'Wachtwoord gewijzigd' });
+  } catch (err) {
+    console.error('[API] Error resetting wachtwoord:', err);
     res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });
   }
 });
