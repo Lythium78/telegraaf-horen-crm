@@ -333,12 +333,21 @@ app.get('/api/stats', vereistInlog, (req, res) => {
 // CONTACTS ROUTES
 // ============================================================
 
-// GET alle contacts
+// GET alle contacts (optioneel: ?zoek=term zoekt op naam, email, bedrijf, telefoon, woonplaats)
 app.get('/api/contacts', vereistInlog, (req, res) => {
   try {
-    const contacts = database.getAllContacts();
-    auditLog('contacts_opgelijst', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
-    res.json({ success: true, data: contacts });
+    const zoek = req.query.zoek ? String(req.query.zoek).trim().substring(0, 200) : null;
+
+    let contactenLijst;
+    if (zoek && zoek.length >= 2) {
+      contactenLijst = database.zoekContacts(zoek);
+      auditLog('contacts_gezocht', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip, lengte: zoek.length });
+    } else {
+      contactenLijst = database.getAllContacts();
+      auditLog('contacts_opgelijst', req.session.gebruiker.gebruikersnaam, null, { ip: req.ip });
+    }
+
+    res.json({ success: true, data: contactenLijst });
   } catch (err) {
     console.error('[API] Error fetching contacts:', err);
     res.status(500).json({ success: false, error: 'Er is een fout opgetreden' });

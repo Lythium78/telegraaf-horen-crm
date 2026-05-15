@@ -274,6 +274,29 @@ function getAllContacts() {
   }
 }
 
+function zoekContacts(zoekterm) {
+  try {
+    const pattern = `%${zoekterm}%`;
+    const stmt = db.prepare(`
+      SELECT * FROM contacts
+      WHERE naam LIKE ? OR email LIKE ? OR bedrijf LIKE ?
+        OR telefoonnummer LIKE ? OR mobiel LIKE ? OR woonplaats LIKE ?
+        OR klantnummer_extern LIKE ?
+      ORDER BY naam ASC
+    `);
+    stmt.bind([pattern, pattern, pattern, pattern, pattern, pattern, pattern]);
+    const resultaat = [];
+    while (stmt.step()) {
+      resultaat.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return resultaat;
+  } catch (err) {
+    console.error('[DB] Error searching contacts:', err);
+    return [];
+  }
+}
+
 function getContactById(id) {
   try {
     const stmt = db.prepare('SELECT * FROM contacts WHERE id = ?');
@@ -1316,6 +1339,7 @@ module.exports = {
   saveDatabase,
   // Contacts
   getAllContacts,
+  zoekContacts,
   getContactById,
   createContact,
   updateContact,

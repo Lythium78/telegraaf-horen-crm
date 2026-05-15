@@ -675,7 +675,11 @@ function renderKlantenLijst() {
     gefilterd = gefilterd.filter(c =>
       (c.naam || '').toLowerCase().includes(zoekterm) ||
       (c.klantnummer_extern || '').toLowerCase().includes(zoekterm) ||
-      (c.email || '').toLowerCase().includes(zoekterm)
+      (c.email || '').toLowerCase().includes(zoekterm) ||
+      (c.bedrijf || '').toLowerCase().includes(zoekterm) ||
+      (c.telefoonnummer || '').toLowerCase().includes(zoekterm) ||
+      (c.mobiel || '').toLowerCase().includes(zoekterm) ||
+      (c.woonplaats || '').toLowerCase().includes(zoekterm)
     );
   }
 
